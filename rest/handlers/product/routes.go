@@ -3,6 +3,7 @@ package product
 import (
 	"encoding/json"
 	"net/http"
+	//"strconv"
 
 	"ecoscan.com/repo"
 	"github.com/jmoiron/sqlx"
@@ -23,11 +24,14 @@ func (h *ProductHandler) RegisterRoutes(mux *http.ServeMux) {
 }
 
 func (h *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
+	
+	w.Header().Set("Content-Type", "application/json")
+
 	var newProduct repo.Product
 	barcode := r.PathValue("barcode")
-
-	query := `SELECT * FROM products WHERE barcode = $1;
- `
+	
+	query := "SELECT * FROM products WHERE barcode=$1"
+ 
 
 	err := h.DB.Get(&newProduct, query, barcode)
 	if err != nil {

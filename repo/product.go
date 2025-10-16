@@ -2,6 +2,7 @@ package repo
 
 type Product struct{
 	ID int `json:"id" db:"id"`
+	Barcode string `json:"barcode" db:"barcode"`
 	Name string `json:"name" db:"name"`
 	BrandName string `json:"brand_name" db:"brand_name"`
 	Category string `json:"category" db:"category"`
