@@ -1,14 +1,14 @@
 package main
 
 import (
-	"ecoscan/handlers/product"
+	"ecoscan.com/rest/handlers/product"
 	"net/http"
 )
 
 func main() {
 	mux := http.NewServeMux()
 
-	product.RegisterRoutes(mux)
+	newMux := product.RegisterRoutes(mux)
 
-	http.ListenAndServe(":2020", mux)
+	http.ListenAndServe(":2020", newMux)
 }
