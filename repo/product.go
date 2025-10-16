@@ -8,8 +8,8 @@ type Product struct{
 	SubCatergory string `json:"sub_category" db:"sub_category"`
 	ImageURL string `json:"image_url" db:"image_url"`
 	Price float32 `json:"price" db:"price"`
-	Score int `json:"score" db:"score"`
+	//Score int `json:"score" db:"score"`
 	PackagingMaterial string `json:"packaging_material" db:"packaging_material"`
 	ManufacturingLocation string `json:"manufacturing_location" db:"manufacturing_location"`
-	DisposalMethod string 
+	DisposalMethod string `json:"disposal_method" db:"disposal_method"`
 }
