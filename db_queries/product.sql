@@ -35,7 +35,6 @@ CREATE TABLE product_requests (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Index for faster lookups by status or user
 CREATE INDEX ON product_requests (status);
 CREATE INDEX ON product_requests (user_id);
 
