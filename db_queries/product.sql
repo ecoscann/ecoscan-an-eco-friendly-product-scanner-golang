@@ -23,6 +23,22 @@ CREATE TABLE product_requests (
     CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+
+CREATE TABLE product_requests (
+    id BIGSERIAL PRIMARY KEY,
+    barcode VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    brand_name VARCHAR(255),
+    image_url TEXT,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status VARCHAR(50) NOT NULL DEFAULT 'pending', -- Status: pending, approved, rejected
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Index for faster lookups by status or user
+CREATE INDEX ON product_requests (status);
+CREATE INDEX ON product_requests (user_id);
+
 INSERT INTO products 
 (barcode, name, brand_name, category, sub_category, image_url, price, packaging_material, manufacturing_location, disposal_method)
 VALUES
