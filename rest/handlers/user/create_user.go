@@ -31,10 +31,14 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//pass length checker
+
 	if len(req.Password) < 8 {
 		http.Error(w, "Password length must be 8 minimum", http.StatusBadRequest)
 		return
 	}
+
+	//hashing pass
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil{
