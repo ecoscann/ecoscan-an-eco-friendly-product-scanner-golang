@@ -9,7 +9,7 @@ import (
 
 func (h *ProductHandler) ReqProduct(w http.ResponseWriter, r *http.Request) {
 
-	err := r.ParseMultipartForm(10 << 20)
+	err := r.ParseMultipartForm(10 << 20) //10mb max allowed
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
