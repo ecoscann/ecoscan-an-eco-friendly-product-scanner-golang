@@ -6,7 +6,10 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"time"
+
 	"ecoscan.com/repo"
+	"ecoscan.com/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -24,6 +27,8 @@ func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// searching db with mail to match
+
 	var user repo.User
 	query := `SELECT * FROM users WHERE email = $1`
 	err := h.DB.Get(&user, query, req.Email)
@@ -37,6 +42,8 @@ func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// comparing user old hash pass with new one
+
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password))
 	if err != nil {
 		log.Println("Invalid password attempt for email: ", req.Email)
@@ -44,18 +51,40 @@ func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenString, err := GenerateJWT(user.ID)
+	// generating access tokens
+
+	accessToken, err := utils.GenerateAccessToken(user.ID)
 	if err != nil {
-		log.Printf("Failed to generate JWT: %v", err)
+		log.Printf("Failed to generate access token: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
+	// generating refresh token
+
+	refreshToken, err := utils.GenerateRefreshToken()
+
+	//  saving refresh token into db
+
+	expiryTime := time.Now().Add(time.Hour * 24*7) // 7 days
+	query = `INSERT INTO refresh_tokens (user_id, token, expires_at)VALUES ($1, $2, $3)`
+	_, err = h.DB.Exec(query, user.ID, refreshToken, expiryTime)
+
+	if err != nil {
+        log.Printf("Failed to save refresh token: %v", err)
+        http.Error(w, "Internal server error", http.StatusInternalServerError)
+        return
+    }
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+
+	//    sending token to the client
+
 	json.NewEncoder(w).Encode(map[string]string{
 		"message": "Login successful",
-		"token":   tokenString,
+		"access_token": accessToken,
+		"refresh_token": refreshToken,
 	})
 
 }
