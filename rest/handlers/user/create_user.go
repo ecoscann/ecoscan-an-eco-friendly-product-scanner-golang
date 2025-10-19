@@ -41,7 +41,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	//hashing pass
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil{
+	if err != nil {
 		log.Println("Failed to hash password: ", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -72,6 +72,8 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Email already in use", http.StatusConflict)
 			return
 		}
+		http.Error(w, "Error occured in database", http.StatusInternalServerError)
+		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
