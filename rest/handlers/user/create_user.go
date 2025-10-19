@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"ecoscan.com/repo"
-	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 )
@@ -14,17 +13,6 @@ type RegisterRequest struct {
 	Name     string `json:"name"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
-}
-
-// database operations and access to connect
-type UserHandler struct {
-	DB *sqlx.DB
-}
-
-func NewUserHandler(db *sqlx.DB) *UserHandler {
-	return &UserHandler{
-		DB: db,
-	}
 }
 
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
