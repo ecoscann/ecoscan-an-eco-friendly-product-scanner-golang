@@ -54,7 +54,7 @@ func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	accessToken, err := utils.GenerateAccessToken(user.ID)
 	if err != nil {
-		log.Printf("Failed to generate access token: %v", err)
+		log.Println("Failed to generate access token: ", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -62,6 +62,11 @@ func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	// generating refresh token
 
 	refreshToken, err := utils.GenerateRefreshToken()
+	if err != nil{
+		log.Println("Failed to generate refresh token: ", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
 
 	//  saving refresh token into db
 
