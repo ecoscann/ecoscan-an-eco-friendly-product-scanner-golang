@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"time"
-
 	"ecoscan.com/repo"
 	"ecoscan.com/utils"
 	"golang.org/x/crypto/bcrypt"

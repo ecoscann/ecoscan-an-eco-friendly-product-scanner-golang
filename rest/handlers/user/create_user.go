@@ -2,11 +2,13 @@ package user
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"ecoscan.com/repo"
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type RegisterRequest struct {
@@ -35,6 +37,13 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil{
+		log.Println("Failed to hash password: ", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
 	query := `
 		INSERT INTO users (
 			name, 
@@ -50,10 +59,10 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 			NOW(), 
 			NOW()
 		)
-		RETURNING id, name, email, password_hash, points, created_at, updated_at
+		RETURNING id, name, email, points, created_at, updated_at
 	`
 	var newUser repo.User
-	err = h.DB.Get(&newUser, query, req.Name, req.Email, req.Password)
+	err = h.DB.Get(&newUser, query, req.Name, req.Email, string(hashedPassword))
 	if err != nil {
 		pqErr, ok := err.(*pq.Error)
 		if ok && pqErr.Code == "23505" {

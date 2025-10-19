@@ -4,7 +4,7 @@ import (
 	"ecoscan.com/repo"
 )
 
-func CalculateScore(product repo.Product) {
+func CalculateScore(product repo.Product) float64{
 	packagingScore := calculatePackagingScore(product.PackagingMaterial)
 	transportScore := calculateTransportScore(product.ManufacturingLocation)
 	disposalScore := calculateDisposalScore(product.DisposalMethod)
