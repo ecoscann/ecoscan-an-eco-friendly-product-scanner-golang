@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"net/http"
+	"strconv"
 
 	"ecoscan.com/config"
 	"ecoscan.com/rest/handlers/product"
@@ -13,15 +15,14 @@ import (
 func Serve() {
 
 	cnf := config.GetConfig()
-
-	sslmode := "disable"
-	if cnf.DB.EnableSSLMode {
-		sslmode = "Required"
+	var sslmode string
+	if !cnf.DB.EnableSSLMode {
+		sslmode = "disable"
 	}
 
 	connectStr := fmt.Sprintf(
 		"user=%s password=%s dbname=%s sslmode=%s",
-		cnf.DB.User, cnf.DB.Password,cnf.DB.Name, sslmode
+		cnf.DB.User, cnf.DB.Password, cnf.DB.Name, sslmode,
 	)
 
 	db, err := sqlx.Connect("postgres", connectStr)
@@ -40,8 +41,7 @@ func Serve() {
 
 	productHandler.RegisterRoutes(mux)
 	UserHandler.RegisterRoutes(mux)
-	fmt.Sprintf(": %d")
-	addr:=
+	addr := ":"+ strconv.Itoa(cnf.HttpPort)
 
-	http.ListenAndServe(":2020", mux)
+		http.ListenAndServe(addr, mux)
 }

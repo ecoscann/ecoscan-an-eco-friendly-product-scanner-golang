@@ -8,7 +8,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var configurations *Config
+
 
 type DBConfig struct {
 	Host          string
@@ -26,6 +26,9 @@ type Config struct {
 	JWTSecretKey string
 	DB           *DBConfig
 }
+
+var configurations *Config
+var dbconfig *DBConfig
 
 func loadConfig() {
 
@@ -113,7 +116,7 @@ func loadConfig() {
 		os.Exit(1)
 	}
 
-	dbConfig := &DBConfig{
+	dbconfig := &DBConfig{
 		Host:          dbhost,
 		Port:          int(dbprt),
 		User:          dbUser,
@@ -127,7 +130,7 @@ func loadConfig() {
 		ServiceName:  serviceName,
 		HttpPort:     int(port),
 		JWTSecretKey: jwtSecretKey,
-		DB:           dbConfig,
+		DB:           dbconfig,
 	}
 }
 
