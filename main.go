@@ -21,7 +21,8 @@ func main() {
 
 	connectStr := "user=postgres password=1212 dbname=ecoscan sslmode=disable"
 
-	db, err := sqlx.Connect("postgres", connectStr)
+	db, err := sqlx.Connect("postgres", 
+	connectStr)
 	if err != nil {
 		fmt.Println("DB Error")
 		return
