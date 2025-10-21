@@ -50,7 +50,7 @@ func loadConfig() {
 		os.Exit(1)
 	}
 
-	httpPort := os.Getenv("HTTP_PORT")
+	httpPort := os.Getenv("PORT")
 	if httpPort == "" {
 		fmt.Println("Port is required")
 		os.Exit(1)
