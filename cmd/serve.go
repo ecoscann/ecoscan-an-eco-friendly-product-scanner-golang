@@ -1,72 +1,50 @@
 package cmd
 
 import (
-	"context"
-	"fmt"
-	"log"
-	"net/http"
-	"os"
-	"strconv"
+    "log"
+    "net/http"
+    "os"
+    "strconv"
 
-	"ecoscan.com/config"
-	"ecoscan.com/rest/handlers/product"
-	"ecoscan.com/rest/handlers/user"
-	"ecoscan.com/rest/middlewares"
-	"github.com/jackc/pgx/v5"
-	"github.com/jmoiron/sqlx"
+    "ecoscan.com/config"
+    "ecoscan.com/rest/handlers/product"
+    "ecoscan.com/rest/handlers/user"
+    "ecoscan.com/rest/middlewares"
+    "github.com/jmoiron/sqlx"
+    _ "github.com/lib/pq" // make sure pq driver is imported
 )
 
 func Serve() {
+    // connect to Supabase using DATABASE_URL
+    dbURL := os.Getenv("DATABASE_URL")
+    if dbURL == "" {
+        log.Fatal("DATABASE_URL is not set")
+    }
 
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatalf("Failed to connect to the database: %v", err)
-	}
-	defer conn.Close(context.Background())
+    db, err := sqlx.Connect("postgres", dbURL)
+    if err != nil {
+        log.Fatalf("Database connection error: %v", err)
+    }
+    defer db.Close()
 
-	// Example query to test connection
-	var version string
-	if err := conn.QueryRow(context.Background(), "SELECT version()").Scan(&version); err != nil {
-		log.Fatalf("Query failed: %v", err)
-	}
+    mngr := middlewares.NewManager()
+    mngr.Use(
+        middlewares.Logger,
+        middlewares.CORS,
+    )
 
-	log.Println("Connected to:", version)
+    log.Println("Database Connected")
 
-	cnf := config.GetConfig()
-	var sslmode string
-	if !cnf.DB.EnableSSLMode {
-		sslmode = "disable"
-	}
+    productHandler := product.NewProductHandler(db)
+    userHandler := user.NewUserHandler(db)
 
-	connectStr := fmt.Sprintf(
-		"user=%s password=%s dbname=%s sslmode=%s",
-		cnf.DB.User, cnf.DB.Password, cnf.DB.Name, sslmode,
-	)
+    mux := http.NewServeMux()
+    productHandler.RegisterRoutes(mux, mngr)
+    userHandler.RegisterRoutes(mux, mngr)
 
-	db, err := sqlx.Connect("postgres", connectStr)
-	if err != nil {
-		log.Fatalf("Database connection error: %v", err)
-		return
-	}
-	defer db.Close()
+    cnf := config.GetConfig()
+    addr := ":" + strconv.Itoa(cnf.HttpPort)
 
-	mngr := middlewares.NewManager()
-	mngr.Use(
-		middlewares.Logger,
-		middlewares.CORS,
-	)
-
-	fmt.Println(" Database Connected")
-
-	productHandler := product.NewProductHandler(db)
-	UserHandler := user.NewUserHandler(db)
-
-	mux := http.NewServeMux()
-
-	productHandler.RegisterRoutes(mux, mngr)
-	UserHandler.RegisterRoutes(mux, mngr)
-
-	addr := ":" + strconv.Itoa(cnf.HttpPort)
-
-	http.ListenAndServe(addr, mux)
+    log.Printf("Server running on %s\n", addr)
+    http.ListenAndServe(addr, mux)
 }
