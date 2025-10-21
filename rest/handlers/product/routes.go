@@ -2,9 +2,20 @@ package product
 
 import (
 	"net/http"
+
+	"ecoscan.com/rest/middlewares"
 )
 
-func (h *ProductHandler) RegisterRoutes(mux *http.ServeMux) {
-	mux.Handle("GET /api/v1/products/barcode/{barcode}", http.HandlerFunc(h.GetProduct))
-	mux.Handle("POST /api/v1/request", http.HandlerFunc(h.ReqProduct))
+func (h *ProductHandler) RegisterRoutes(mux *http.ServeMux, mngr *middlewares.Manager) {
+	mux.Handle("GET /api/v1/products/barcode/{barcode}", 
+		mngr.Chain(http.HandlerFunc(h.GetProduct)),
+
+	)
+
+	mux.Handle("POST api/v1/products/request", 
+	mngr.Chain(
+		http.HandlerFunc(h.ReqProduct), 
+		middlewares.AuthMiddleware,
+		),
+	)
 }

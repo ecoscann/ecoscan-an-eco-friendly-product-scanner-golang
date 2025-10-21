@@ -10,26 +10,27 @@ type Manager struct {
 
 func NewManager() *Manager {
 	return &Manager{
-		globalmiddlewares: make([]Middleware, 0),
+		globalmiddlewares: []Middleware{},
 	}
 }
 
-func (mnger *Manager) Use(middlewares ...Middleware) {
-	mnger.globalmiddlewares = append(mnger.globalmiddlewares, middlewares...)
+	// to add globalmiddelware to the list
+func (m *Manager) Use(middlewares ...Middleware) {
+	m.globalmiddlewares = append(m.globalmiddlewares, middlewares...)
 }
 
-func (mnger *Manager) With(handler http.Handler, middlewares ...Middleware) http.Handler {
-	hd := handler
-	for _, middleware := range middlewares {
-		hd = middleware(hd)
+	// applying all the middlewares
+func (m *Manager) Chain(handler http.Handler, routeSpecificMiddlewares ...Middleware) http.Handler {
+	
+	// specific route middleware
+	for i := len(routeSpecificMiddlewares)-1; i >= 0; i--{
+		handler = routeSpecificMiddlewares[i](handler)
 	}
-	return hd
-}
 
-func (mnger *Manager) WrapMux(handler http.Handler) http.Handler {
-	hd := handler
-	for _, middleware := range mnger.globalmiddlewares {
-		hd = middleware(hd)
+	// apply global middleware
+	for i := len(m.globalmiddlewares) - 1; i>=0 ; i--{
+		handler = m.globalmiddlewares[i](handler)
 	}
-	return hd
+
+	return handler
 }

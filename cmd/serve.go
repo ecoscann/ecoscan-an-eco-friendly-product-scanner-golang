@@ -9,6 +9,7 @@ import (
 	"ecoscan.com/config"
 	"ecoscan.com/rest/handlers/product"
 	"ecoscan.com/rest/handlers/user"
+	"ecoscan.com/rest/middlewares"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -32,6 +33,12 @@ func Serve() {
 	}
 	defer db.Close()
 
+	mngr := middlewares.NewManager()
+	mngr.Use(
+		middlewares.Logger,
+		middlewares.CORS,
+	)
+
 	fmt.Println(" Database Connected")
 
 	productHandler := product.NewProductHandler(db)
@@ -39,8 +46,10 @@ func Serve() {
 
 	mux := http.NewServeMux()
 
-	productHandler.RegisterRoutes(mux)
-	UserHandler.RegisterRoutes(mux)
+
+	productHandler.RegisterRoutes(mux, mngr)
+	UserHandler.RegisterRoutes(mux, mngr)
+	
 	addr := ":"+ strconv.Itoa(cnf.HttpPort)
 
 		http.ListenAndServe(addr, mux)
