@@ -1,10 +1,16 @@
 package product
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"mime/multipart"
 	"net/http"
+
+	"ecoscan.com/config"
+	"github.com/cloudinary/cloudinary-go/v2"
+	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
+	//"github.com/cloudinary/cloudinary-go/v2/config"
 )
 
 func (h *ProductHandler) ReqProduct(w http.ResponseWriter, r *http.Request) {
@@ -18,7 +24,12 @@ func (h *ProductHandler) ReqProduct(w http.ResponseWriter, r *http.Request) {
 	barcode := r.FormValue("barcode")
 	name := r.FormValue("name")
 	brandName := r.FormValue("brandname")
-	userID := 123 //for jwt verification
+
+	userID, ok := r.Context().Value("userID").(int64)
+	if !ok {
+		http.Error(w, "Could not get user ID from context", http.StatusInternalServerError)
+		return
+	}
 
 	if barcode == "" || name == "" {
 		http.Error(w, "Barcode and Name is required", http.StatusBadRequest)
@@ -55,6 +66,7 @@ func (h *ProductHandler) ReqProduct(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
+	defer tx.Rollback()
 
 	//user submit req : +10 point added to his profile
 	pointsQuery := `UPDATE users SET points = points + 10 WHERE id = $1`
@@ -79,5 +91,33 @@ func (h *ProductHandler) ReqProduct(w http.ResponseWriter, r *http.Request) {
 }
 
 func uploadToCloud(file multipart.File, imgMetaData *multipart.FileHeader) (string, error) {
-	return "", nil
+	cnf := config.GetConfig()
+	cldUrl := cnf.CloudinaryURL
+	if cldUrl == "" {
+		log.Println("Cloudinary URL not configured")
+		return "", http.ErrAbortHandler // একটি জেনেরিক এরর
+	}
+
+	cld, err := cloudinary.NewFromURL(cldUrl)
+	if err != nil {
+		log.Printf("Failed to init Cloudinary: %v", err)
+		return "", err
+	}
+
+	ctx := context.Background()
+
+	// ২. আপলোড প্যারামিটার সেট করুন
+	uploadParams := uploader.UploadParams{
+		// uploading new folder
+		Folder: "ecoscan_products",
+	}
+
+	uploadResult, err := cld.Upload.Upload(ctx, file, uploadParams)
+	if err != nil {
+		log.Printf("Failed to upload image: %v", err)
+		return "", err
+	}
+
+	// returning url
+	return uploadResult.SecureURL, nil
 }

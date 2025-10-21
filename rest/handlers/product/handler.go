@@ -1,6 +1,8 @@
 package product
 
-import "github.com/jmoiron/sqlx"
+import (
+	"github.com/jmoiron/sqlx"
+)
 
 type ProductHandler struct {
 	DB *sqlx.DB

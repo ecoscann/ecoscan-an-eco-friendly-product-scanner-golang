@@ -24,6 +24,7 @@ type Config struct {
 	ServiceName  string
 	HttpPort     int
 	JWTSecretKey string
+	CloudinaryURL string
 	DB           *DBConfig
 }
 
@@ -116,6 +117,12 @@ func loadConfig() {
 		os.Exit(1)
 	}
 
+	cloudinaryURL := os.Getenv("CLOUDINARY_URL")
+	if cloudinaryURL == ""{
+		fmt.Println("Invalid cloudinary url ", err)
+		os.Exit(1)
+	}
+
 	dbconfig := &DBConfig{
 		Host:          dbhost,
 		Port:          int(dbprt),
@@ -130,6 +137,7 @@ func loadConfig() {
 		ServiceName:  serviceName,
 		HttpPort:     int(port),
 		JWTSecretKey: jwtSecretKey,
+		CloudinaryURL: cloudinaryURL,
 		DB:           dbconfig,
 	}
 }
