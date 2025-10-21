@@ -14,7 +14,7 @@ type Config struct {
 	HttpPort      int
 	JWTSecretKey  string
 	CloudinaryURL string
-	DatabaseURL   string // শুধু এটি ডাটাবেসের জন্য
+	DatabaseURL   string 
 }
 
 var configurations *Config
@@ -25,10 +25,10 @@ func loadConfig() {
 		fmt.Println("No .env file found, using environment variables")
 	}
 
-	// Render-এর PORT অথবা লোকাল HTTP_PORT লোড করুন
+
 	httpPortStr := os.Getenv("PORT")
 	if httpPortStr == "" {
-		httpPortStr = os.Getenv("HTTP_PORT") // .env থেকে লোকাল পোর্ট
+		httpPortStr = os.Getenv("HTTP_PORT") 
 		if httpPortStr == "" {
 			fmt.Println("PORT or HTTP_PORT is required")
 			os.Exit(1)
@@ -40,17 +40,17 @@ func loadConfig() {
 		os.Exit(1)
 	}
 
-	// .env বা Render থেকে ভেরিয়েবল লোড করুন
+	
 	configurations = &Config{
 		Version:       os.Getenv("VERSION"),
 		ServiceName:   os.Getenv("SERVICE_NAME"),
 		HttpPort:      int(port),
 		JWTSecretKey:  os.Getenv("JWT_SECRET_KEY"),
 		CloudinaryURL: os.Getenv("CLOUDINARY_URL"),
-		DatabaseURL:   os.Getenv("DATABASE_URL"), // শুধু DATABASE_URL
+		DatabaseURL:   os.Getenv("DATABASE_URL"), 
 	}
 
-	// জরুরি ভেরিয়েবলগুলো চেক করুন
+
 	if configurations.DatabaseURL == "" {
 		fmt.Println("DATABASE_URL is required")
 		os.Exit(1)
