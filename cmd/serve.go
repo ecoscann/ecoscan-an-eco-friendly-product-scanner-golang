@@ -1,50 +1,50 @@
 package cmd
 
 import (
-    "log"
-    "net/http"
-    "os"
-    "strconv"
+	"fmt"
+	"log"
+	"net/http"
+	"strconv"
 
-    "ecoscan.com/config"
-    "ecoscan.com/rest/handlers/product"
-    "ecoscan.com/rest/handlers/user"
-    "ecoscan.com/rest/middlewares"
-    "github.com/jmoiron/sqlx"
-    _ "github.com/lib/pq" // make sure pq driver is imported
+	"ecoscan.com/config"
+	"ecoscan.com/rest/handlers/product"
+	"ecoscan.com/rest/handlers/user"
+	"ecoscan.com/rest/middlewares"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq" // make sure pq driver is imported
 )
 
 func Serve() {
-    // connect to Supabase using DATABASE_URL
-    dbURL := os.Getenv("DATABASE_URL")
-    if dbURL == "" {
-        log.Fatal("DATABASE_URL is not set")
-    }
+	// 1. Load the config *first*!
+	cnf := config.GetConfig()
 
-    db, err := sqlx.Connect("postgres", dbURL)
-    if err != nil {
-        log.Fatalf("Database connection error: %v", err)
-    }
-    defer db.Close()
+	// 2. Connect using the DatabaseURL from the config
+	db, err := sqlx.Connect("postgres", cnf.DatabaseURL)
+	if err != nil {
+		log.Fatalf("Database connection error: %v", err)
+	}
+	defer db.Close()
 
-    mngr := middlewares.NewManager()
-    mngr.Use(
-        middlewares.Logger,
-        middlewares.CORS,
-    )
+	log.Println("Database Connected")
 
-    log.Println("Database Connected")
+	// 3. Setup Manager and Handlers (your code was perfect here)
+	mngr := middlewares.NewManager()
+	mngr.Use(
+		middlewares.Logger,
+		middlewares.CORS,
+	)
 
-    productHandler := product.NewProductHandler(db)
-    userHandler := user.NewUserHandler(db)
+	productHandler := product.NewProductHandler(db)
+	userHandler := user.NewUserHandler(db)
 
-    mux := http.NewServeMux()
-    productHandler.RegisterRoutes(mux, mngr)
-    userHandler.RegisterRoutes(mux, mngr)
+	mux := http.NewServeMux()
+	productHandler.RegisterRoutes(mux, mngr)
+	userHandler.RegisterRoutes(mux, mngr)
 
-    cnf := config.GetConfig()
-    addr := ":" + strconv.Itoa(cnf.HttpPort)
+	// 4. Listen on the port from the config
+	addr := ":" + strconv.Itoa(cnf.HttpPort)
 
-    log.Printf("Server running on %s\n", addr)
-    http.ListenAndServe(addr, mux)
+	log.Printf("Server running on %s\n", addr)
+	// 5. Use the Manager's chain on the main mux
+	http.ListenAndServe(addr, mngr.Chain(mux))
 }

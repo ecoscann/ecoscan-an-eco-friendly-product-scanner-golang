@@ -8,60 +8,51 @@ import (
 	"github.com/joho/godotenv"
 )
 
-
-
-type DBConfig struct {
-	Host          string
-	Port          int
-	User          string
-	Password      string
-	Name          string
-	EnableSSLMode bool
-}
-
 type Config struct {
-	Version      string
-	ServiceName  string
-	HttpPort     int
-	JWTSecretKey string
+	Version       string
+	ServiceName   string
+	HttpPort      int
+	JWTSecretKey  string
 	CloudinaryURL string
-	DB           *DBConfig
+	DatabaseURL   string
 }
 
 var configurations *Config
-var dbconfig *DBConfig
 
 func loadConfig() {
-
 	err := godotenv.Load()
 	if err != nil {
-		fmt.Println("Failed to load env fileand err:", err)
-		os.Exit(1)
+		fmt.Println("No .env file found, using environment variables")
 	}
+
 	version := os.Getenv("VERSION")
 	if version == "" {
 		fmt.Println("Version is required")
 		os.Exit(1)
 	}
 
-	serviceName := os.Getenv("Service_Name")
+	// FIX: Your .env has SERVICE_NAME, not Service_Name
+	serviceName := os.Getenv("SERVICE_NAME")
 	if serviceName == "" {
-		fmt.Println("Service name its required")
+		fmt.Println("Service name is required")
 		os.Exit(1)
 	}
 
-	httpPort := os.Getenv("PORT")
-	if httpPort == "" {
-		fmt.Println("Port is required")
-		os.Exit(1)
+	// FIX: This code now works for BOTH Render (PORT) and Local (HTTP_PORT)
+	httpPortStr := os.Getenv("PORT")
+	if httpPortStr == "" {
+		httpPortStr = os.Getenv("HTTP_PORT")
+		if httpPortStr == "" {
+			fmt.Println("PORT or HTTP_PORT is required")
+			os.Exit(1)
+		}
 	}
-
-	port, err := strconv.ParseInt(httpPort, 10, 64)
-
+	port, err := strconv.ParseInt(httpPortStr, 10, 64)
 	if err != nil {
-		fmt.Println("Port must be number")
+		fmt.Println("Port must be a number")
 		os.Exit(1)
 	}
+	// END FIX
 
 	jwtSecretKey := os.Getenv("JWT_SECRET_KEY")
 	if jwtSecretKey == "" {
@@ -69,76 +60,27 @@ func loadConfig() {
 		os.Exit(1)
 	}
 
-	dbhost := os.Getenv("DB_HOST")
-	if dbhost == "" {
-		fmt.Println("DB Host is needed")
-		os.Exit(1)
-	}
-
-	dbPort := os.Getenv("DB_PORT")
-	if dbPort == "" {
-		fmt.Println("DB port is needed")
-		os.Exit(1)
-	}
-
-	dbprt, err := strconv.ParseInt(dbPort, 10, 64)
-	if err != nil {
-		fmt.Println("DB Port must be number")
-		os.Exit(1)
-	}
-
-	dbUser := os.Getenv("DB_USER")
-	if dbUser == "" {
-		fmt.Println("DB User is needed")
-		os.Exit(1)
-	}
-
-	dbPass := os.Getenv("DB_PASS")
-	if dbPass == "" {
-		fmt.Println("DB Password is needed")
-		os.Exit(1)
-	}
-
-	dbName := os.Getenv("DB_NAME")
-	if dbName == "" {
-		fmt.Println("DB Name is needed")
-		os.Exit(1)
-	}
-
-	enableSSLMode := os.Getenv("ENABLE_SSL_MODE")
-	if enableSSLMode == "" {
-		fmt.Println("DB ENABLE_SSL_MODE is required")
-		os.Exit(1)
-	}
-
-	enAblesslmode, err := strconv.ParseBool(enableSSLMode)
-	if err != nil {
-		fmt.Println("Invalid SSL Mode", err)
-		os.Exit(1)
-	}
-
 	cloudinaryURL := os.Getenv("CLOUDINARY_URL")
-	if cloudinaryURL == ""{
-		fmt.Println("Invalid cloudinary url ", err)
+	if cloudinaryURL == "" {
+		fmt.Println("Cloudinary URL is required")
 		os.Exit(1)
 	}
 
-	dbconfig := &DBConfig{
-		Host:          dbhost,
-		Port:          int(dbprt),
-		User:          dbUser,
-		Password:      dbPass,
-		Name:          dbName,
-		EnableSSLMode: enAblesslmode,
+	// FIX: We only need DATABASE_URL. Remove all DB_HOST, DB_USER, etc.
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		fmt.Println("DATABASE_URL is needed")
+		os.Exit(1)
 	}
+	// END FIX
 
 	configurations = &Config{
-		Version:      version,
-		ServiceName:  serviceName,
-		HttpPort:     int(port),
-		JWTSecretKey: jwtSecretKey,
+		Version:       version,
+		ServiceName:   serviceName,
+		HttpPort:      int(port),
+		JWTSecretKey:  jwtSecretKey,
 		CloudinaryURL: cloudinaryURL,
-		DB:           dbconfig,
+		DatabaseURL:   dbURL,
 	}
 }
 
