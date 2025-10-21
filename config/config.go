@@ -8,13 +8,23 @@ import (
 	"github.com/joho/godotenv"
 )
 
+
+type DBConfig struct {
+	Host        string
+	Port        string 
+	User        string
+	Password    string
+	Name        string
+	EnableSSLMode bool
+}
+
 type Config struct {
 	Version       string
 	ServiceName   string
 	HttpPort      int
 	JWTSecretKey  string
 	CloudinaryURL string
-	DatabaseURL   string
+	DB            *DBConfig 
 }
 
 var configurations *Config
@@ -25,20 +35,7 @@ func loadConfig() {
 		fmt.Println("No .env file found, using environment variables")
 	}
 
-	version := os.Getenv("VERSION")
-	if version == "" {
-		fmt.Println("Version is required")
-		os.Exit(1)
-	}
-
-	// FIX: Your .env has SERVICE_NAME, not Service_Name
-	serviceName := os.Getenv("SERVICE_NAME")
-	if serviceName == "" {
-		fmt.Println("Service name is required")
-		os.Exit(1)
-	}
-
-	// FIX: This code now works for BOTH Render (PORT) and Local (HTTP_PORT)
+	
 	httpPortStr := os.Getenv("PORT")
 	if httpPortStr == "" {
 		httpPortStr = os.Getenv("HTTP_PORT")
@@ -52,35 +49,61 @@ func loadConfig() {
 		fmt.Println("Port must be a number")
 		os.Exit(1)
 	}
-	// END FIX
 
-	jwtSecretKey := os.Getenv("JWT_SECRET_KEY")
-	if jwtSecretKey == "" {
-		fmt.Println("Jwt secret key is needed")
+	
+	dbHost := os.Getenv("DB_HOST")
+	if dbHost == "" {
+		fmt.Println("DB_HOST is required")
+		os.Exit(1)
+	}
+	dbPort := os.Getenv("DB_PORT")
+	if dbPort == "" {
+		fmt.Println("DB_PORT is required")
+		os.Exit(1)
+	}
+	dbUser := os.Getenv("DB_USER")
+	if dbUser == "" {
+		fmt.Println("DB_USER is required")
+		os.Exit(1)
+	}
+	dbPass := os.Getenv("DB_PASS")
+	if dbPass == "" {
+		fmt.Println("DB_PASS is required")
+		os.Exit(1)
+	}
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		fmt.Println("DB_NAME is required")
+		os.Exit(1)
+	}
+	enableSSLModeStr := os.Getenv("ENABLE_SSL_MODE")
+	if enableSSLModeStr == "" {
+		fmt.Println("ENABLE_SSL_MODE is required")
+		os.Exit(1)
+	}
+	enableSSLMode, err := strconv.ParseBool(enableSSLModeStr)
+	if err != nil {
+		fmt.Println("Invalid SSL Mode")
 		os.Exit(1)
 	}
 
-	cloudinaryURL := os.Getenv("CLOUDINARY_URL")
-	if cloudinaryURL == "" {
-		fmt.Println("Cloudinary URL is required")
-		os.Exit(1)
+	dbconfig := &DBConfig{
+		Host:        dbHost,
+		Port:        dbPort,
+		User:        dbUser,
+		Password:    dbPass,
+		Name:        dbName,
+		EnableSSLMode: enableSSLMode,
 	}
 
-	// FIX: We only need DATABASE_URL. Remove all DB_HOST, DB_USER, etc.
-	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" {
-		fmt.Println("DATABASE_URL is needed")
-		os.Exit(1)
-	}
-	// END FIX
-
+	
 	configurations = &Config{
-		Version:       version,
-		ServiceName:   serviceName,
+		Version:       os.Getenv("VERSION"),
+		ServiceName:   os.Getenv("SERVICE_NAME"),
 		HttpPort:      int(port),
-		JWTSecretKey:  jwtSecretKey,
-		CloudinaryURL: cloudinaryURL,
-		DatabaseURL:   dbURL,
+		JWTSecretKey:  os.Getenv("JWT_SECRET_KEY"),
+		CloudinaryURL: os.Getenv("CLOUDINARY_URL"),
+		DB:            dbconfig,
 	}
 }
 
