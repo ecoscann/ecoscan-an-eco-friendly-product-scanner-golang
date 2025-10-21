@@ -1,3 +1,4 @@
+
 package user
 
 import (
@@ -7,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+
 	"ecoscan.com/repo"
 	"ecoscan.com/utils"
 	"golang.org/x/crypto/bcrypt"
@@ -17,16 +19,20 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+
+type LoginResponse struct {
+	Message      string    `json:"message"`
+	AccessToken  string    `json:"access_token"`
+	RefreshToken string    `json:"refresh_token"`
+	User         repo.User `json:"user"`
+}
+
 func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
-
 	var req LoginRequest
-
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-
-	// searching db with mail to match
 
 	var user repo.User
 	query := `SELECT * FROM users WHERE email = $1`
@@ -34,61 +40,51 @@ func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Invalid email or password", http.StatusUnauthorized)
-			return
+		} else {
+			log.Printf("Database error finding user: %v", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
 		}
-		log.Println("Database  error finding user: ", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	// comparing user old hash pass with new one
-
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password))
 	if err != nil {
-		log.Println("Invalid password attempt for email: ", req.Email)
 		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 		return
 	}
 
-	// generating access tokens
-
 	accessToken, err := utils.GenerateAccessToken(user.ID)
 	if err != nil {
-		log.Println("Failed to generate access token: ", err)
+		log.Printf("Failed to generate access token: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-
-	// generating refresh token
 
 	refreshToken, err := utils.GenerateRefreshToken()
-	if err != nil{
-		log.Println("Failed to generate refresh token: ", err)
+	if err != nil {
+		log.Printf("Failed to generate refresh token: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	//  saving refresh token into db
-
-	expiryTime := time.Now().Add(time.Hour * 24*7) // 7 days
-	query = `INSERT INTO refresh_tokens (user_id, token, expires_at)VALUES ($1, $2, $3)`
-	_, err = h.DB.Exec(query, user.ID, refreshToken, expiryTime)
-
+	expiryTime := time.Now().Add(time.Hour * 24 * 7)
+	_, err = h.DB.Exec(`INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1, $2, $3) ON CONFLICT (user_id) DO UPDATE SET token = $2, expires_at = $3`, user.ID, refreshToken, expiryTime)
 	if err != nil {
-        log.Printf("Failed to save refresh token: %v", err)
-        http.Error(w, "Internal server error", http.StatusInternalServerError)
-        return
-    }
+		log.Printf("Failed to save refresh token: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	user.PasswordHash = "" 
+
+	loginResponse := LoginResponse{
+		Message:      "Login successful",
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		User:         user, 
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-
-	//    sending token to the client
-
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Login successful",
-		"access_token": accessToken,
-		"refresh_token": refreshToken,
-	})
-
+	json.NewEncoder(w).Encode(loginResponse)
 }
