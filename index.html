@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
         body {
             font-family: 'Inter', sans-serif;
             background: #f7fefc;
@@ -173,6 +174,9 @@
             });
             window.scrollTo(0, 0);
             
+            // Re-attach listeners *after* page content might have been added/shown
+            attachPageListeners(pageId); 
+            
             if (pageId === 'dashboard' && user) { updateDashboard(JSON.parse(user)); }
         }
 
@@ -186,11 +190,16 @@
             const desktopNav = document.getElementById('desktop-nav');
             const mobileMenu = document.getElementById('mobile-menu');
 
+            if (!desktopNav || !mobileMenu) return; // Guard clause
+
             if (token) {
                 desktopNav.innerHTML = `<a href="#home" class="text-slate-600 hover:text-emerald-600 font-medium transition-colors px-3 py-2 rounded-md">Search</a><a href="#dashboard" class="text-slate-600 hover:text-emerald-600 font-medium transition-colors px-3 py-2 rounded-md">Dashboard</a><button id="logout-button" class="bg-slate-200 text-slate-700 font-medium px-4 py-2 rounded-full hover:bg-slate-300 transition-colors">Logout</button>`;
                 mobileMenu.innerHTML = `<a href="#home" class="block text-slate-600 hover:text-emerald-600 font-medium py-2">Search</a><a href="#dashboard" class="block text-slate-600 hover:text-emerald-600 font-medium py-2">Dashboard</a><button id="mobile-logout-button" class="w-full text-left bg-slate-200 text-slate-700 font-medium px-3 py-2 mt-2 rounded-md hover:bg-slate-300 transition-colors">Logout</button>`;
-                document.getElementById('logout-button').addEventListener('click', logout);
-                document.getElementById('mobile-logout-button').addEventListener('click', logout);
+                // Attach logout listeners after injecting HTML
+                const logoutBtn = document.getElementById('logout-button');
+                const mobileLogoutBtn = document.getElementById('mobile-logout-button');
+                if(logoutBtn) logoutBtn.addEventListener('click', logout);
+                if(mobileLogoutBtn) mobileLogoutBtn.addEventListener('click', logout);
             } else {
                 desktopNav.innerHTML = `<a href="#home" class="text-slate-600 hover:text-emerald-600 font-medium transition-colors px-3 py-2 rounded-md">Search</a><a href="#login" class="text-slate-600 hover:text-emerald-600 font-medium transition-colors px-3 py-2 rounded-md">Login</a><a href="#register" class="btn-secondary">Sign Up</a>`;
                 mobileMenu.innerHTML = `<a href="#home" class="block text-slate-600 hover:text-emerald-600 font-medium py-2">Search</a><a href="#login" class="block text-slate-600 hover:text-emerald-600 font-medium py-2">Login</a><a href="#register" class="block bg-emerald-100 text-emerald-700 font-medium px-3 py-2 mt-2 rounded-md hover:bg-emerald-200 transition-colors">Sign Up</a>`;
@@ -199,8 +208,8 @@
 
         function logout() {
             localStorage.clear();
-            checkLoginState();
-            window.location.hash = '#login';
+            checkLoginState(); // Update nav immediately
+            window.location.hash = '#login'; // Navigate to login
             showNotification('You have been logged out.', 'info');
         }
         
@@ -214,12 +223,18 @@
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;
             }
-            const response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok) {
-                throw new Error(data.message || data.error || `Request failed: ${response.statusText}`);
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
+                const data = await response.json().catch(() => ({})); 
+                if (!response.ok) {
+                    throw new Error(data.message || data.error || `Request failed: ${response.statusText || response.status}`);
+                }
+                return data;
+            } catch (error) {
+                console.error('API Call Error:', error);
+                showNotification(`Error: ${error.message || 'Network error or invalid server response.'}`, 'error'); // Show error notification
+                throw error; // Re-throw error so calling function knows it failed
             }
-            return data;
         }
 
         // --- ASYNC EVENT HANDLERS ---
@@ -228,11 +243,12 @@
             const form = e.target;
             const errorDiv = document.getElementById(`${type}-error`);
             const submitBtn = form.querySelector('button[type="submit"]');
+            if (!submitBtn || !submitBtn.querySelector('span')) return;
             const originalText = submitBtn.querySelector('span').textContent;
             
             submitBtn.disabled = true;
             submitBtn.innerHTML = `<span class="loader ease-linear rounded-full border-2 border-t-2 border-gray-200 h-5 w-5"></span>`;
-            errorDiv.classList.add('hidden');
+            if (errorDiv) errorDiv.classList.add('hidden');
 
             try {
                 const data = Object.fromEntries(new FormData(form).entries());
@@ -242,25 +258,29 @@
                         localStorage.setItem('accessToken', result.access_token);
                         localStorage.setItem('refreshToken', result.refresh_token);
                         localStorage.setItem('user', JSON.stringify(result.user));
-                        checkLoginState();
+                        checkLoginState(); 
                         window.location.hash = '#dashboard';
                         showNotification(`Welcome back, ${result.user.name}!`, 'success');
-                    } else { 
-                        throw new Error("Login response did not include user data."); 
-                    }
-                } else { // register
+                    } else { throw new Error("Login response missing user data."); }
+                } else { 
                     await apiCall('/api/v1/auth/register', { method: 'POST', body: JSON.stringify(data) });
                     window.location.hash = '#login';
                     showNotification('Account created successfully! Please log in.', 'success');
                 }
             } catch (error) {
-                errorDiv.textContent = error.message;
-                errorDiv.classList.remove('hidden');
-                errorDiv.classList.add('error-shake');
-                setTimeout(() => errorDiv.classList.remove('error-shake'), 500);
+                if(errorDiv) {
+                    errorDiv.textContent = error.message;
+                    errorDiv.classList.remove('hidden');
+                    errorDiv.classList.add('error-shake');
+                    setTimeout(() => errorDiv.classList.remove('error-shake'), 500);
+                } else {
+                    showNotification(`Error: ${error.message}`, 'error');
+                }
             } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = `<span>${originalText}</span>`;
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `<span>${originalText}</span>`;
+                }
             }
         }
         
@@ -269,18 +289,26 @@
             const form = e.target;
             const errorDiv = document.getElementById('request-error');
             const submitBtn = form.querySelector('button[type="submit"]');
+            if (!submitBtn || !submitBtn.querySelector('span')) return; 
             const originalText = submitBtn.querySelector('span').textContent;
 
             submitBtn.disabled = true;
             submitBtn.innerHTML = `<span class="loader ease-linear rounded-full border-2 border-t-2 border-gray-200 h-5 w-5"></span>`;
-            errorDiv.classList.add('hidden');
+            if (errorDiv) errorDiv.classList.add('hidden');
 
             try {
                 const formData = new FormData();
-                formData.append('barcode', document.getElementById('req-barcode').value);
-                formData.append('name', document.getElementById('req-name').value);
-                formData.append('brandName', document.getElementById('req-brand').value);
-                const imageFile = document.getElementById('req-image').files[0];
+                const barcodeInput = document.getElementById('req-barcode');
+                const nameInput = document.getElementById('req-name');
+                const brandInput = document.getElementById('req-brand');
+                const imageInput = document.getElementById('req-image');
+
+                if (!barcodeInput || !nameInput || !brandInput || !imageInput) throw new Error("Form elements not found.");
+
+                formData.append('barcode', barcodeInput.value);
+                formData.append('name', nameInput.value);
+                formData.append('brandname', brandInput.value); // Lowercase 'n'
+                const imageFile = imageInput.files[0];
                 if (!imageFile) throw new Error("Product image is required.");
                 formData.append('productImage', imageFile);
 
@@ -288,20 +316,29 @@
                 showNotification('Product submitted for review!', 'success');
                 form.reset();
             } catch (error) {
-                errorDiv.textContent = error.message;
-                errorDiv.classList.remove('hidden');
-                errorDiv.classList.add('error-shake');
-                setTimeout(() => errorDiv.classList.remove('error-shake'), 500);
+                 if(errorDiv) {
+                    errorDiv.textContent = error.message;
+                    errorDiv.classList.remove('hidden');
+                    errorDiv.classList.add('error-shake');
+                    setTimeout(() => errorDiv.classList.remove('error-shake'), 500);
+                } else {
+                     showNotification(`Error: ${error.message}`, 'error');
+                }
             } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = `<span>${originalText}</span>`;
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `<span>${originalText}</span>`;
+                }
             }
         }
 
         async function handleSearch(e) {
             e.preventDefault();
-            const barcode = document.getElementById('barcode-input').value.trim();
+            const barcodeInput = document.getElementById('barcode-input');
             const resultsContainer = document.getElementById('results-container');
+            if (!barcodeInput || !resultsContainer) return;
+
+            const barcode = barcodeInput.value.trim();
             if (!barcode) return;
             
             resultsContainer.classList.remove('hidden');
@@ -318,18 +355,17 @@
         // --- UI & NOTIFICATION FUNCTIONS ---
         function showNotification(message, type = 'info') {
             const container = document.getElementById('notification-container');
+            if (!container) return;
             const bgColor = type === 'success' ? 'bg-emerald-500' : type === 'error' ? 'bg-red-500' : 'bg-sky-500';
             const icon = type === 'success' ? '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />' : type === 'error' ? '<path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />' : '<path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />';
 
             const toast = document.createElement('div');
             toast.className = `flex items-center text-white text-sm font-medium px-4 py-3 rounded-xl shadow-lg transform transition-all duration-300 translate-x-full opacity-0 ${bgColor}`;
-            toast.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">${icon}</svg><p>${message}</p>`;
+            toast.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">${icon}</svg><p>${message}</p>`;
             
             container.appendChild(toast);
             
-            setTimeout(() => {
-                toast.classList.remove('translate-x-full', 'opacity-0');
-            }, 10);
+            requestAnimationFrame(() => { setTimeout(() => { toast.classList.remove('translate-x-full', 'opacity-0'); }, 10); });
 
             setTimeout(() => {
                 toast.classList.add('translate-x-full', 'opacity-0');
@@ -338,15 +374,14 @@
         }
         function renderResults(data) {
             const resultsContainer = document.getElementById('results-container');
+             if (!resultsContainer) return;
             resultsContainer.innerHTML = `
                 <div id="product-details-content" class="pageTransition">
                     <div class="bg-white p-6 md:p-8 rounded-3xl shadow-2xl border border-slate-200/80 grid grid-cols-1 lg:grid-cols-5 gap-8 items-center">
                         <div class="lg:col-span-2 flex flex-col items-center">
                             <img src="${data.product.image_url || ''}" alt="${data.product.name}" class="w-full max-w-sm mx-auto lg:max-w-full h-auto object-contain rounded-2xl bg-slate-100 p-2 aspect-square" onerror="this.onerror=null;this.src='https://placehold.co/400x400/e2e8f0/64748b?text=Image+Not+Found';">
                         </div>
-                        <div class="lg:col-span-3" id="product-info-content">
-                            <!-- Product info will be rendered by JS -->
-                        </div>
+                        <div class="lg:col-span-3" id="product-info-content"></div>
                     </div>
                     <div class="mt-16">
                         <h3 class="text-3xl md:text-4xl font-bold text-slate-900 mb-8 text-center">Greener Alternatives</h3>
@@ -358,10 +393,13 @@
         }
 
         function renderProductDetails(product, score, scoreRating) {
+            const infoContent = document.getElementById('product-info-content');
+            if (!infoContent) return;
+
             const scoreColor = score > 80 ? 'text-emerald-500' : score > 60 ? 'text-green-500' : score > 30 ? 'text-yellow-500' : 'text-red-500';
             const scoreRingColor = score > 80 ? '#10B981' : score > 60 ? '#22C55E' : score > 30 ? '#EAB308' : '#EF4444';
 
-            document.getElementById('product-info-content').innerHTML = `
+            infoContent.innerHTML = `
                 <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6">
                     <div class="flex-shrink-0">
                         <div class="relative h-36 w-36">
@@ -402,6 +440,7 @@
 
         function renderAlternatives(alternatives) {
             const grid = document.getElementById('alternatives-grid');
+            if (!grid) return;
             if (!alternatives || alternatives.length === 0) {
                 grid.innerHTML = `<p class="col-span-full text-center text-slate-500 bg-white p-8 rounded-2xl shadow-md border">No greener alternatives found for this category.</p>`;
                 return;
@@ -425,7 +464,7 @@
             const lowerMaterial = material.toLowerCase();
             if (['glass', 'paper', 'compostable_paper', 'cardboard', 'none'].includes(lowerMaterial)) return 'bg-green-100 text-green-800';
             if (['recyclable_plastic', 'aluminum'].includes(lowerMaterial)) return 'bg-sky-100 text-sky-800';
-            return 'bg-red-100 text-red-800';
+            return 'bg-red-100 text-red-800'; 
         }
 
         function updateDashboard(user) {
@@ -436,7 +475,7 @@
             
             if(welcomeMsg) welcomeMsg.textContent = `Welcome back, ${user.name || 'User'}!`;
 
-            if (!pointsEl || !circle) return;
+            if (!pointsEl || !circle) return; 
             const radius = circle.r.baseVal.value;
             const circumference = 2 * Math.PI * radius;
             const points = user.points || 0;
@@ -446,27 +485,48 @@
             setTimeout(() => { circle.style.strokeDashoffset = offset; }, 100);
         }
         
+        // --- ATTACH EVENT LISTENERS DYNAMICALLY ---
+        // This function ensures listeners are attached ONLY when the page is active
+        function attachPageListeners(pageId) {
+            // Remove previous potentially detached listeners (more robust)
+            // (Note: For this simple SPA, re-querying might be simpler than explicit removal)
+            
+            if (pageId === 'home') {
+                const searchForm = document.getElementById('search-form');
+                if (searchForm) searchForm.onsubmit = handleSearch; // Use onsubmit for simplicity or addEventListener
+            } else if (pageId === 'login') {
+                const loginForm = document.getElementById('login-form');
+                if (loginForm) loginForm.onsubmit = (e) => handleAuthForm(e, 'login');
+            } else if (pageId === 'register') {
+                 const registerForm = document.getElementById('register-form');
+                if (registerForm) registerForm.onsubmit = (e) => handleAuthForm(e, 'register');
+            } else if (pageId === 'dashboard') {
+                const requestForm = document.getElementById('request-product-form');
+                if (requestForm) requestForm.onsubmit = handleRequestProduct;
+            }
+        }
+
         // --- Document Ready ---
         document.addEventListener('DOMContentLoaded', () => {
-            // Inject page templates
+            // Inject page templates first
             document.getElementById('page-home').innerHTML = homeTemplate;
             document.getElementById('page-login').innerHTML = authFormTemplate('login');
             document.getElementById('page-register').innerHTML = authFormTemplate('register');
             document.getElementById('page-dashboard').innerHTML = dashboardTemplate;
 
-            // Add event listeners after templates are injected
-            document.getElementById('search-form').addEventListener('submit', handleSearch);
-            document.getElementById('login-form').addEventListener('submit', (e) => handleAuthForm(e, 'login'));
-            document.getElementById('register-form').addEventListener('submit', (e) => handleAuthForm(e, 'register'));
-            document.getElementById('request-product-form').addEventListener('submit', handleRequestProduct);
-            document.getElementById('mobile-menu-button').addEventListener('click', () => {
-                document.getElementById('mobile-menu').classList.toggle('hidden');
-            });
+            // Attach listeners that are always present
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            if (mobileMenuButton) {
+                mobileMenuButton.addEventListener('click', () => {
+                    const mobileMenuEl = document.getElementById('mobile-menu');
+                    if(mobileMenuEl) mobileMenuEl.classList.toggle('hidden');
+                });
+            }
             window.addEventListener('hashchange', handleRouteChange);
             
-            // Initial Load
-            checkLoginState();
-            handleRouteChange();
+            // Initial Load - Check login and show the correct initial page
+            checkLoginState(); // Set initial nav state
+            handleRouteChange(); // Show initial page and attach its listeners
         });
 
     </script>
