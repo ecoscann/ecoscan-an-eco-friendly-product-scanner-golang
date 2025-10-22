@@ -12,7 +12,7 @@ func (h *ProductHandler) RegisterRoutes(mux *http.ServeMux, mngr *middlewares.Ma
 
 	)
 
-	mux.Handle("POST api/v1/products/request", 
+	mux.Handle("POST /api/v1/products/request", 
 	mngr.Chain(
 		http.HandlerFunc(h.ReqProduct), 
 		middlewares.AuthMiddleware,
