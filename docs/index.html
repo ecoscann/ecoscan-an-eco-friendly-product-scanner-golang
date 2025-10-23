@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoScan - A Polished Guide to Greener Shopping</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f7fefc;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        #main-content { flex-grow: 1; }
+        .header-glass {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+        }
+        .page { display: none; }
+        .page.active { display: block; animation: pageTransition 0.5s ease-out forwards; }
+        .loader {
+            border-top-color: #10B981;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pageTransition {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes error-shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        .error-shake { animation: error-shake 0.5s ease-in-out; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #eefbf7; }
+        ::-webkit-scrollbar-thumb { background-color: #34d399; border-radius: 10px; }
+        .btn { /* Base button class */
+             @apply font-bold py-3 px-8 rounded-full transition-all duration-300 transform hover:scale-[1.03] shadow-md hover:shadow-lg disabled:cursor-not-allowed flex items-center justify-center disabled:opacity-70;
+        }
+        .btn-primary {
+            @apply w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 text-white btn;
+        }
+        .btn-secondary {
+            @apply bg-emerald-100 text-emerald-700 font-medium px-4 py-2 rounded-full hover:bg-emerald-200 transition-colors btn;
+        }
+        .form-input {
+            @apply w-full px-4 py-3 rounded-xl bg-slate-100 border-2 border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all duration-200;
+        }
+        .card {
+            @apply bg-white rounded-2xl shadow-lg border border-slate-200/60 overflow-hidden hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased">
+
+    <!-- Header -->
+    <header class="header-glass border-b border-slate-200/80 sticky top-0 z-50">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <a href="#home" class="flex items-center space-x-3 group">
+                <div class="bg-emerald-500 p-2 rounded-full group-hover:rotate-12 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+                <h1 class="text-2xl font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">EcoScan</h1>
+            </a>
+            <div id="desktop-nav" class="hidden md:flex items-center space-x-2"></div>
+            <button id="mobile-menu-button" class="md:hidden p-2 rounded-md text-slate-600 hover:bg-slate-100"><svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" /></svg></button>
+        </nav>
+        <div id="mobile-menu" class="md:hidden hidden px-4 pt-2 pb-4 space-y-2 border-t border-slate-200/80"></div>
+    </header>
+
+    <!-- Main Content -->
+    <div id="main-content">
+        <div id="page-home" class="page"></div>
+        <div id="page-login" class="page"></div>
+        <div id="page-register" class="page"></div>
+        <div id="page-dashboard" class="page"></div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="about" class="bg-slate-900 text-slate-400">
+        <div class="container mx-auto px-6 py-12 text-center"><h2 class="text-2xl font-bold text-white mb-2">About EcoScan</h2><p class="max-w-3xl mx-auto mb-6">We empower consumers to make environmentally conscious decisions. By providing transparent data, we believe we can collectively reduce our impact on the planet.</p><p class="text-sm">&copy; 2025 EcoScan. All rights reserved.</p></div>
+    </footer>
+
+    <!-- Notification Toasts -->
+    <div id="notification-container" class="fixed bottom-5 right-5 z-50 space-y-3 w-80"></div>
+
+    <script>
+        const API_BASE_URL = 'https://ecoscan-an-eco-friendly-product-scanner.onrender.com';
+        const pages = ['home', 'login', 'register', 'dashboard'];
+
+        // --- TEMPLATES ---
+        const homeTemplate = `
+            <div class="relative min-h-[70vh] flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 text-center overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-b from-emerald-50 to-transparent z-0"></div>
+                <div class="relative z-10">
+                    <h2 class="text-4xl md:text-6xl font-extrabold text-slate-900 mb-4 tracking-tight">Shop Smart, Live Green.</h2>
+                    <p class="text-lg text-slate-600 max-w-2xl mx-auto mb-10">Find sustainable products effortlessly. Enter a barcode to reveal its environmental story.</p>
+                    <form id="search-form" class="w-full max-w-xl mx-auto flex flex-col sm:flex-row items-center gap-2 bg-white p-2 rounded-full shadow-2xl hover:shadow-emerald-200 transition-all duration-300 border border-slate-200">
+                        <input type="text" id="barcode-input" placeholder="Enter product barcode..." class="w-full sm:flex-1 py-3 px-6 text-slate-700 bg-transparent border-none focus:outline-none focus:ring-0">
+                        <button type="submit" class="btn-primary py-3.5">Analyze</button>
+                    </form>
+                </div>
+            </div>
+            <main id="results-container" class="container mx-auto px-4 sm:px-6 lg:px-8 pb-16 hidden"></main>
+        `;
+        const authFormTemplate = (type) => {
+             const isLogin = type === 'login';
+             return `
+             <div class="min-h-[70vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+                 <div class="w-full max-w-md space-y-8 bg-white p-10 rounded-3xl shadow-2xl border border-slate-200/80">
+                     <div>
+                         <h2 class="text-center text-3xl font-extrabold text-slate-900">${isLogin ? 'Sign in to your account' : 'Create your account'}</h2>
+                         <p class="mt-2 text-center text-sm text-slate-600">Or <a href="${isLogin ? '#register' : '#login'}" class="font-medium text-emerald-600 hover:text-emerald-500">${isLogin ? 'create a new account' : 'sign in'}</a></p>
+                     </div>
+                     <form id="${type}-form" class="mt-8 space-y-6">
+                         <div class="space-y-4 rounded-md">
+                             ${!isLogin ? `<div><label for="register-name" class="form-label">Full Name</label><input id="register-name" name="name" type="text" required class="form-input"></div>` : ''}
+                             <div><label for="${type}-email" class="form-label">Email address</label><input id="${type}-email" name="email" type="email" autocomplete="email" required class="form-input"></div>
+                             <div><label for="${type}-password" class="form-label">Password</label><input id="${type}-password" name="password" type="password" autocomplete="${isLogin ? 'current-password' : 'new-password'}" required class="form-input" minlength="8"></div>
+                         </div>
+                         <div id="${type}-error" class="text-red-500 text-sm hidden font-medium"></div>
+                         <div><button type="submit" class="btn-primary"><span>${isLogin ? 'Sign In' : 'Create Account'}</span></button></div>
+                     </form>
+                 </div>
+             </div>`;
+        };
+        const dashboardTemplate = `
+              <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                  <div class="bg-gradient-to-r from-emerald-500 to-green-500 text-white p-8 md:p-12 rounded-3xl shadow-xl mb-12">
+                     <h2 class="text-4xl font-bold">Your Dashboard</h2>
+                     <p id="welcome-message" class="text-lg text-emerald-100 mt-2 opacity-90">Welcome back!</p>
+                 </div>
+                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                     <div class="lg:col-span-2 bg-white p-8 rounded-3xl shadow-2xl border border-slate-200/80">
+                         <h3 class="text-2xl font-bold text-slate-800 mb-1">Contribute to Our Database</h3>
+                         <p class="text-slate-500 mb-6">Found a product we don't have? Submit it here and earn points!</p>
+                         <form id="request-product-form" class="space-y-5">
+                             <div><label for="req-barcode" class="form-label">Barcode</label><input id="req-barcode" type="text" required class="form-input"></div>
+                             <div><label for="req-name" class="form-label">Product Name</label><input id="req-name" type="text" required class="form-input"></div>
+                             <div><label for="req-brand" class="form-label">Brand Name</label><input id="req-brand" type="text" class="form-input"></div>
+                             <div><label for="req-image" class="form-label">Product Image</label><input id="req-image" type="file" required accept="image/png, image/jpeg, image/webp" class="block w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 transition-colors cursor-pointer"></div>
+                             <div id="request-error" class="text-red-500 text-sm hidden pt-1 font-medium"></div>
+                             <div class="pt-2"><button type="submit" class="btn-primary"><span>Submit Product</span></button></div>
+                         </form>
+                     </div>
+                     <div class="bg-white p-8 rounded-3xl shadow-2xl border border-slate-200/80 flex flex-col items-center justify-center text-center">
+                          <div class="relative"><svg class="h-40 w-40" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" stroke="#e2e8f0" stroke-width="10" fill="transparent" /><circle id="points-circle" cx="50" cy="50" r="45" stroke="#10B981" stroke-width="10" fill="transparent" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="283" transform="rotate(-90 50 50)" style="transition: stroke-dashoffset 1s ease-out;" /></svg><p class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-4xl font-extrabold text-emerald-600" id="user-points">0</p></div>
+                          <h3 class="text-xl font-bold mt-6 text-slate-800">Contribution Points</h3>
+                          <p class="text-sm mt-2 text-slate-500 max-w-xs">Each product you add helps thousands make better choices.</p>
+                     </div>
+                 </div>
+             </main>
+         `;
+
+        // --- UTILITY FUNCTIONS ---
+        function getElement(id) {
+            const el = document.getElementById(id);
+            // Don't log error here, handle null checks where the function is called
+            return el;
+        }
+
+        // --- SPA ROUTER & STATE ---
+        function showPage(pageId) {
+            console.log("[Router] Navigating to page:", pageId);
+            const user = localStorage.getItem('user');
+            // Redirect logic
+            if (pageId === 'dashboard' && !user) {
+                console.warn("[Router] User not logged in, redirecting to login");
+                window.location.hash = '#login';
+                return;
+            }
+            if ((pageId === 'login' || pageId === 'register') && user) {
+                 console.warn("[Router] User logged in, redirecting to dashboard");
+                window.location.hash = '#dashboard';
+                return;
+            }
+
+            // Show/hide pages
+            let pageFound = false;
+            pages.forEach(pId => {
+                const pageEl = getElement(`page-${pId}`);
+                if (pageEl) {
+                   const shouldBeActive = pId === pageId;
+                   if(shouldBeActive) pageFound = true;
+                   pageEl.classList.toggle('active', shouldBeActive);
+                   // Inject content if not already done (lazy loading)
+                   if (shouldBeActive && !pageEl.dataset.initialized) {
+                       console.log(`[Router] Injecting content for ${pageId}`);
+                       if (pageId === 'home') pageEl.innerHTML = homeTemplate;
+                       else if (pageId === 'login') pageEl.innerHTML = authFormTemplate('login');
+                       else if (pageId === 'register') pageEl.innerHTML = authFormTemplate('register');
+                       else if (pageId === 'dashboard') pageEl.innerHTML = dashboardTemplate;
+                       pageEl.dataset.initialized = 'true'; // Mark as initialized
+                       // Attach listeners immediately after injection
+                       attachPageListeners(pageId);
+                   }
+                } else {
+                   console.error(`[Router] Core page element not found: page-${pId}.`);
+                }
+            });
+            // Default to home if hash doesn't match
+            if (!pageFound && pageId !== 'home') {
+                 console.warn(`[Router] Unknown page route: ${pageId}, defaulting to home.`);
+                 window.location.hash = '#home';
+                 return;
+            }
+
+            window.scrollTo(0, 0);
+
+            if (pageId === 'dashboard' && user) {
+                 try {
+                     const userData = JSON.parse(user);
+                     console.log("[Router] Updating dashboard UI for user:", userData);
+                     updateDashboard(userData);
+                 } catch (e) {
+                     console.error("[Router] Failed to parse user data from localStorage for dashboard", e);
+                     logout(); // Corrupted data
+                 }
+            }
+        }
+
+        function handleRouteChange() {
+            const hash = window.location.hash.substring(1).replace(/\/$/, '') || 'home';
+            console.log("[Router] Hash changed to:", hash);
+            showPage(hash);
+        }
+
+        function checkLoginState() {
+             console.log("[Auth] Checking login state...");
+            const token = localStorage.getItem('accessToken');
+            const desktopNav = getElement('desktop-nav');
+            const mobileMenu = getElement('mobile-menu');
+
+            if (!desktopNav || !mobileMenu) { console.error("[Auth] Nav elements not found!"); return; }
+
+            // Clear previous content
+            desktopNav.innerHTML = '';
+            mobileMenu.innerHTML = '';
+
+            if (token) {
+                 console.log("[Auth] User IS logged in.");
+                desktopNav.innerHTML = `<a href="#home" class="text-slate-600 hover:text-emerald-600 font-medium transition-colors px-3 py-2 rounded-md">Search</a><a href="#dashboard" class="text-slate-600 hover:text-emerald-600 font-medium transition-colors px-3 py-2 rounded-md">Dashboard</a><button id="logout-button" class="bg-slate-200 text-slate-700 font-medium px-4 py-2 rounded-full hover:bg-slate-300 transition-colors">Logout</button>`;
+                mobileMenu.innerHTML = `<a href="#home" class="block text-slate-600 hover:text-emerald-600 font-medium py-2">Search</a><a href="#dashboard" class="block text-slate-600 hover:text-emerald-600 font-medium py-2">Dashboard</a><button id="mobile-logout-button" class="w-full text-left bg-slate-200 text-slate-700 font-medium px-3 py-2 mt-2 rounded-md hover:bg-slate-300 transition-colors">Logout</button>`;
+
+                // Use setTimeout to ensure elements are added before adding listeners
+                setTimeout(() => {
+                    attachListener('logout-button', 'click', logout);
+                    attachListener('mobile-logout-button', 'click', logout);
+                }, 0);
+
+            } else {
+                 console.log("[Auth] User IS NOT logged in.");
+                desktopNav.innerHTML = `<a href="#home" class="text-slate-600 hover:text-emerald-600 font-medium transition-colors px-3 py-2 rounded-md">Search</a><a href="#login" class="text-slate-600 hover:text-emerald-600 font-medium transition-colors px-3 py-2 rounded-md">Login</a><a href="#register" class="btn-secondary">Sign Up</a>`;
+                mobileMenu.innerHTML = `<a href="#home" class="block text-slate-600 hover:text-emerald-600 font-medium py-2">Search</a><a href="#login" class="block text-slate-600 hover:text-emerald-600 font-medium py-2">Login</a><a href="#register" class="block bg-emerald-100 text-emerald-700 font-medium px-3 py-2 mt-2 rounded-md hover:bg-emerald-200 transition-colors">Sign Up</a>`;
+            }
+        }
+
+        function logout() {
+            console.log("[Auth] Executing logout function...");
+            localStorage.clear();
+            checkLoginState(); // Update nav immediately
+            window.location.hash = '#login'; // Navigate to login
+            showNotification('You have been logged out.', 'info');
+        }
+
+        // --- API CALLS ---
+        async function apiCall(endpoint, options = {}) {
+            const token = localStorage.getItem('accessToken');
+            const headers = { ...options.headers };
+            headers['Accept'] = 'application/json'; // Important for error handling
+
+            // Do NOT set Content-Type for FormData
+            if (options.body && !(options.body instanceof FormData)) {
+                headers['Content-Type'] = 'application/json';
+            }
+
+            if (token) {
+                console.log(`%c[API] Adding Auth token for: ${endpoint}`, "color: blue;");
+                headers['Authorization'] = `Bearer ${token}`;
+            } else {
+                 console.warn(`[API] No auth token found for: ${endpoint}`);
+            }
+
+            console.log(`[API] Calling: ${options.method || 'GET'} ${API_BASE_URL}${endpoint}`);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
+                console.log(`[API] Response Status for ${endpoint}:`, response.status);
+                const contentType = response.headers.get("content-type");
+                let data = {};
+                let responseText = ''; // Store raw text for debugging
+
+                try {
+                    responseText = await response.text(); // Get text regardless of status
+                } catch (textErr) {
+                    console.error(`[API] Error reading response text for ${endpoint}:`, textErr);
+                    // Don't throw here, let status check handle it
+                }
+
+
+                if (!response.ok) {
+                     console.error(`[API] Error Response Text for ${endpoint} (Status ${response.status}):`, responseText);
+                     // Try parsing error as JSON
+                     try { data = JSON.parse(responseText); } catch { data = { message: responseText || `Request failed: ${response.statusText || response.status}` }; }
+
+                     if (response.status === 401) {
+                        console.error("[API] Unauthorized (401). Forcing logout.");
+                        logout();
+                        // Throw specific error to prevent generic notification
+                        throw new Error("SESSION_EXPIRED"); // Use a specific code
+                    }
+                    // Throw other non-OK errors
+                    throw new Error(data.message || data.error || `Request failed: ${response.statusText || response.status}`);
+                }
+
+                // If response is OK (2xx)
+                if (response.status === 204) { return { message: "Success" }; } // Handle No Content
+
+                if (contentType && contentType.includes("application/json")) {
+                    try {
+                        data = JSON.parse(responseText); // Parse the text we already got
+                    } catch (err) {
+                        console.error("[API] JSON parsing error for OK response:", err, "Response Text:", responseText);
+                        throw new Error(`Invalid JSON received from server (Status: ${response.status})`);
+                    }
+                } else { // Handle successful non-JSON
+                    console.log(`[API] Non-JSON success response for ${endpoint}:`, responseText);
+                    data = { message: responseText || "Success" };
+                }
+
+                console.log(`[API] Call Success for ${endpoint}:`, data);
+                return data;
+            } catch (error) {
+                 // Only log and notify if it wasn't the automatic 401 logout
+                 if (error.message !== "SESSION_EXPIRED") {
+                     console.error(`[API] Call Error (${endpoint}):`, error);
+                     showNotification(`Error: ${error.message || 'Network error or invalid server response.'}`, 'error');
+                 } else {
+                      showNotification('Your session has expired. Please log in again.', 'error');
+                 }
+                throw error; // Re-throw error
+            }
+        }
+
+
+        // --- ASYNC EVENT HANDLERS ---
+        async function handleAuthForm(e, type) {
+             e.preventDefault();
+            const form = e.target;
+            if (!form) return;
+            const errorDiv = getElement(`${type}-error`);
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (!submitBtn || !submitBtn.querySelector('span')) return;
+            const originalText = submitBtn.querySelector('span').textContent;
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<span class="loader ease-linear rounded-full border-2 border-t-2 border-gray-200 h-5 w-5"></span>`;
+            if (errorDiv) errorDiv.classList.add('hidden');
+
+            try {
+                const data = Object.fromEntries(new FormData(form).entries());
+                 console.log(`[Auth] Attempting ${type} with data:`, data);
+                if (type === 'login') {
+                    const result = await apiCall('/api/v1/auth/login', { method: 'POST', body: JSON.stringify(data) });
+                    console.log("[Auth] Login API response:", result);
+                    if (result.user && result.access_token) {
+                        localStorage.setItem('accessToken', result.access_token);
+                        localStorage.setItem('refreshToken', result.refresh_token);
+                        localStorage.setItem('user', JSON.stringify(result.user));
+                        checkLoginState();
+                        window.location.hash = '#dashboard';
+                        // Welcome notification will show when dashboard loads via updateDashboard
+                    } else { throw new Error("Login failed. Invalid response structure from server."); }
+                } else { // register
+                     console.log("[Auth] Attempting registration...");
+                    await apiCall('/api/v1/auth/register', { method: 'POST', body: JSON.stringify(data) });
+                    window.location.hash = '#login';
+                    showNotification('Account created successfully! Please log in.', 'success');
+                }
+            } catch (error) {
+                 console.error(`[Auth] ${type} failed:`, error);
+                if(errorDiv && error.message !== "SESSION_EXPIRED") { // Don't show form error if auto-logged out
+                    errorDiv.textContent = error.message;
+                    errorDiv.classList.remove('hidden');
+                    errorDiv.classList.add('error-shake');
+                    setTimeout(() => { if (errorDiv) errorDiv.classList.remove('error-shake'); }, 500);
+                }
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `<span>${originalText}</span>`;
+                }
+            }
+        }
+
+        async function handleRequestProduct(e) {
+            e.preventDefault();
+            const form = e.target;
+            if (!form) return;
+            const errorDiv = getElement('request-error');
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (!submitBtn || !submitBtn.querySelector('span')) return;
+            const originalText = submitBtn.querySelector('span').textContent;
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<span class="loader ease-linear rounded-full border-2 border-t-2 border-gray-200 h-5 w-5"></span>`;
+            if (errorDiv) errorDiv.classList.add('hidden');
+
+            try {
+                const formData = new FormData();
+                const barcodeInput = getElement('req-barcode');
+                const nameInput = getElement('req-name');
+                const brandInput = getElement('req-brand');
+                const imageInput = getElement('req-image');
+
+                if (!barcodeInput || !nameInput || !brandInput || !imageInput) throw new Error("Form elements not found.");
+
+                formData.append('barcode', barcodeInput.value);
+                formData.append('name', nameInput.value);
+                formData.append('brandname', brandInput.value); // Lowercase 'n'
+                const imageFile = imageInput.files[0];
+                if (!imageFile) throw new Error("Product image is required.");
+                formData.append('productImage', imageFile);
+
+                console.log("[Product] Submitting product request...");
+                await apiCall('/api/v1/products/request', { method: 'POST', body: formData });
+                showNotification('Product submitted for review!', 'success');
+                form.reset();
+            } catch (error) {
+                 console.error("[Product] Request failed:", error);
+                 if(errorDiv && error.message !== "SESSION_EXPIRED") {
+                    errorDiv.textContent = error.message;
+                    errorDiv.classList.remove('hidden');
+                    errorDiv.classList.add('error-shake');
+                    setTimeout(() => { if (errorDiv) errorDiv.classList.remove('error-shake'); }, 500);
+                 }
+                 // Notification handled by apiCall
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `<span>${originalText}</span>`;
+                }
+            }
+        }
+
+        async function handleSearch(e) {
+             e.preventDefault();
+             const form = e.target;
+             if (!form) return;
+            const barcodeInput = getElement('barcode-input');
+            const resultsContainer = getElement('results-container');
+            if (!barcodeInput || !resultsContainer) return;
+
+            const barcode = barcodeInput.value.trim();
+            if (!barcode) return;
+
+            resultsContainer.classList.remove('hidden');
+            resultsContainer.innerHTML = `<div class="text-center py-16"><div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-200 h-12 w-12 mx-auto mb-4"></div><p class="text-slate-600 font-medium">Analyzing product...</p></div>`;
+
+            try {
+                console.log("[Search] Searching for barcode:", barcode);
+                const data = await apiCall(`/api/v1/products/barcode/${barcode}`);
+                 console.log("[Search] Response data:", data);
+                // CRITICAL CHECK: Ensure data has product AND score is a number
+                if (data && data.product && typeof data.score === 'number' && !isNaN(data.score)) {
+                    renderResults(data);
+                } else {
+                    console.error("[Search] Invalid data structure received:", data);
+                     if(data && data.product){
+                         showNotification('Product data received but score is missing or invalid.', 'warn');
+                         renderResults({...data, score: 0}); // Render with default score 0
+                     } else {
+                        // Throw specific error if product itself is missing
+                         throw new Error(data.message || "Received incomplete product data from server.");
+                     }
+                }
+            } catch (error) {
+                 console.error("[Search] Failed:", error);
+                const isNotFound = error.message && (error.message.toLowerCase().includes('not found') || error.message.includes('404'));
+                if (isNotFound) {
+                     resultsContainer.innerHTML = `<div class="text-center p-8 bg-white border-2 border-amber-200 rounded-3xl shadow-lg pageTransition"><h3 class="text-2xl font-bold text-amber-600">Product Not Found</h3><p class="text-slate-500 mt-2 text-lg">We couldn't find barcode <span class="font-semibold">${barcode}</span>. You can help by adding it!</p><a href="#dashboard" class="mt-4 inline-block btn-secondary">Add New Product</a></div>`;
+                } else {
+                    // Error already shown by apiCall, clear loading
+                     resultsContainer.innerHTML = `<div class="text-center p-8 bg-white border-2 border-red-200 rounded-3xl shadow-lg pageTransition"><h3 class="text-2xl font-bold text-red-600">Error</h3><p class="text-red-500 mt-2 text-lg">${error.message}</p></div>`;
+                }
+            }
+        }
+
+        // --- UI & NOTIFICATION FUNCTIONS ---
+        function showNotification(message, type = 'info') {
+             const container = getElement('notification-container');
+             if (!container) return;
+             // Rest of function... (unchanged)
+        }
+        function renderResults(data) {
+             const resultsContainer = getElement('results-container');
+             if (!resultsContainer || !data || !data.product) { /* ... unchanged ... */ return; }
+
+              console.log("[Render] Rendering results with score:", data.score, "Rating:", data.score_rating);
+
+             resultsContainer.innerHTML = `
+                 <div id="product-details-content" class="pageTransition">
+                     <div class="bg-white p-6 md:p-8 rounded-3xl shadow-2xl border border-slate-200/80 grid grid-cols-1 lg:grid-cols-5 gap-8 items-center">
+                         <div class="lg:col-span-2 flex flex-col items-center">
+                             <img src="${data.product.image_url || 'https://placehold.co/400x400/e2e8f0/64748b?text=Image+Missing'}" alt="${data.product.name || 'Product Image'}" class="w-full max-w-sm mx-auto lg:max-w-full h-auto object-contain rounded-2xl bg-slate-100 p-2 aspect-square" onerror="this.onerror=null;this.src='https://placehold.co/400x400/e2e8f0/64748b?text=Image+Not+Found';">
+                         </div>
+                         <div class="lg:col-span-3" id="product-info-content"></div>
+                     </div>
+                     <div class="mt-16">
+                         <h3 class="text-3xl md:text-4xl font-bold text-slate-900 mb-8 text-center">Greener Alternatives</h3>
+                         <div id="alternatives-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6"></div>
+                     </div>
+                 </div>`;
+             renderProductDetails(data.product, data.score, data.score_rating); // Pass score and rating
+             renderAlternatives(data.alternatives);
+        }
+
+        function renderProductDetails(product, score, scoreRating) {
+            const infoContent = getElement('product-info-content');
+            if (!infoContent) return;
+
+            // Use default value 0 if score is undefined/null/NaN
+            const validScore = (typeof score === 'number' && !isNaN(score)) ? score : 0;
+            console.log("[Render] Rendering details with validScore:", validScore, "Rating:", scoreRating);
+            // Recalculate rating if missing or invalid, based on validScore
+            const validScoreRating = scoreRating || getScoreRating(validScore);
+
+            const scoreColor = validScore > 80 ? 'text-emerald-500' : validScore > 60 ? 'text-green-500' : validScore > 30 ? 'text-yellow-500' : 'text-red-500';
+            const scoreRingColor = validScore > 80 ? '#10B981' : validScore > 60 ? '#22C55E' : validScore > 30 ? '#EAB308' : '#EF4444';
+
+            infoContent.innerHTML = `
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                    <div class="flex-shrink-0">
+                        <div class="relative h-36 w-36">
+                            <svg class="absolute inset-0 -rotate-90" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="45" stroke="#e2e8f0" stroke-width="10" fill="transparent" />
+                                <circle id="score-circle" cx="50" cy="50" r="45" stroke="${scoreRingColor}" stroke-width="10" fill="transparent" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="283" style="transition: stroke-dashoffset 1s ease-out;" />
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <p class="text-4xl font-black ${scoreColor}">${validScore}</p>
+                                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">Eco Score</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="inline-block bg-emerald-100 text-emerald-800 text-sm font-semibold px-3 py-1 rounded-full mb-3">${product.category || 'N/A'}</span>
+                        <h2 class="text-3xl font-bold text-slate-900">${product.name || 'Unknown Product'}</h2>
+                        <p class="text-lg text-slate-500 mt-1">${product.brand_name || 'Unknown Brand'}</p>
+                        <p class="mt-4 font-semibold text-lg ${scoreColor}">${validScoreRating}</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-slate-700 mt-8">
+                    <div class="flex items-start space-x-4 p-4 bg-slate-50 rounded-xl"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg><div><p class="text-sm font-medium text-slate-500">Origin</p><p class="font-semibold text-lg capitalize">${product.manufacturing_location || 'N/A'}</p></div></div>
+                    <div class="flex items-start space-x-4 p-4 bg-slate-50 rounded-xl"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12l-1.148-1.148a2 2 0 00-2.828 0L12 15.028l-4.024-4.024a2 2 0 00-2.828 0L4 12m16 0l-4.5-4.5m-4.024-4.024L12 2.944m-4.5 4.5L12 2.944" /></svg><div><p class="text-sm font-medium text-slate-500">Packaging</p><p class="font-semibold text-lg capitalize">${(product.packaging_material || 'N/A').replace(/_/g, ' ')}</p></div></div>
+                    <div class="flex items-start space-x-4 p-4 bg-slate-50 rounded-xl"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg><div><p class="text-sm font-medium text-slate-500">Disposal</p><p class="font-semibold text-lg capitalize">${product.disposal_method || 'N/A'}</p></div></div>
+                    <div class="flex items-start space-x-4 p-4 bg-slate-50 rounded-xl"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01" /></svg><div><p class="text-sm font-medium text-slate-500">Price</p><p class="font-semibold text-lg">$${(typeof product.price === 'number' && !isNaN(product.price)) ? product.price.toFixed(2) : 'N/A'}</p></div></div>
+                </div>`;
+
+            // Animate score circle after rendering
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    const circle = getElement('score-circle');
+                    if (circle) {
+                        const radius = circle.r.baseVal.value;
+                        const circumference = 2 * Math.PI * radius;
+                        const offset = circumference - (validScore / 100) * circumference;
+                        circle.style.strokeDashoffset = offset;
+                    } else { console.warn("Score circle element not found after rendering product details"); }
+                }, 100);
+            });
+        }
+
+        // Add this helper function
+        function getScoreRating(score) {
+            score = (typeof score === 'number' && !isNaN(score)) ? score : 0; // Ensure score is a number
+            if (score <= 30) return "High Impact";
+            if (score <= 60) return "Moderate Impact";
+            if (score <= 80) return "Good Choice";
+            return "Excellent Choice";
+        }
+
+
+        function renderAlternatives(alternatives) {
+            const grid = getElement('alternatives-grid');
+            if (!grid) return;
+            // Rest of function... (unchanged)
+             if (!alternatives || alternatives.length === 0) {
+                 grid.innerHTML = `<p class="col-span-full text-center text-slate-500 bg-white p-8 rounded-2xl shadow-md border">No greener alternatives found for this category.</p>`;
+                 return;
+             }
+             grid.innerHTML = alternatives.map(alt => `
+                 <div class="card">
+                     <img src="${alt.image_url || 'https://placehold.co/400x300/e2e8f0/64748b?text=Image'}" alt="${alt.name}" class="w-full h-48 object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x300/e2e8f0/64748b?text=Image';">
+                     <div class="p-5 flex flex-col flex-grow">
+                         <h4 class="font-bold text-lg text-slate-800 truncate">${alt.name || 'N/A'}</h4>
+                         <p class="text-sm text-slate-500 mb-3">${alt.brand_name || 'N/A'}</p>
+                         <div class="mt-auto flex items-center justify-between pt-3 border-t border-slate-100">
+                              <span class="text-xl font-bold text-emerald-600">$${(typeof alt.price === 'number' && !isNaN(alt.price)) ? alt.price.toFixed(2) : 'N/A'}</span>
+                              <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${getPackagingBadge(alt.packaging_material)} capitalize">${(alt.packaging_material || 'N/A').replace(/_/g, ' ')}</span>
+                         </div>
+                     </div>
+                 </div>`).join('');
+        }
+        function getPackagingBadge(material) {
+             if (!material) return 'bg-slate-100 text-slate-800';
+             const lowerMaterial = material.toLowerCase();
+             if (['glass', 'paper', 'compostable_paper', 'cardboard', 'none'].includes(lowerMaterial)) return 'bg-green-100 text-green-800';
+             if (['recyclable_plastic', 'aluminum'].includes(lowerMaterial)) return 'bg-sky-100 text-sky-800';
+             return 'bg-red-100 text-red-800';
+        }
+        function updateDashboard(user) {
+             if (!user) return;
+             const welcomeMsg = getElement('welcome-message');
+             const pointsEl = getElement('user-points');
+             const circle = getElement('points-circle');
+
+             if(welcomeMsg) welcomeMsg.textContent = `Welcome back, ${user.name || 'User'}!`;
+
+             if (!pointsEl || !circle) return;
+             const radius = circle.r.baseVal.value;
+             const circumference = 2 * Math.PI * radius;
+             const points = user.points || 0;
+             const offset = circumference - (Math.min(points, 1000) / 1000) * circumference;
+
+             pointsEl.textContent = points;
+             // Animate after element is surely in DOM
+              requestAnimationFrame(() => {
+                 setTimeout(() => { circle.style.strokeDashoffset = offset; }, 100);
+              });
+        }
+
+        // --- ATTACH EVENT LISTENERS DYNAMICALLY (REFINED) ---
+        const activeListeners = {}; // Store { listenerKey: { element, handler } }
+        function attachListener(elementId, eventType, handler) {
+            // Use setTimeout to ensure element exists after innerHTML injection
+            setTimeout(() => {
+                const element = getElement(elementId);
+                if (element) {
+                     const listenerKey = `${elementId}-${eventType}`;
+                     // Remove previous listener if exists
+                     if(activeListeners[listenerKey]){
+                         activeListeners[listenerKey].element.removeEventListener(eventType, activeListeners[listenerKey].handler);
+                         console.log(`[Listener] Removed old ${eventType} listener for ${elementId}`);
+                     }
+                     // Add new listener
+                     element.addEventListener(eventType, handler);
+                     // Store reference
+                     activeListeners[listenerKey] = { element: element, handler: handler };
+                     console.log(`[Listener] Attached ${eventType} listener to ${elementId}`);
+                } else {
+                     console.warn(`[Listener] Element not found: ${elementId}. Listener not attached.`);
+                }
+            }, 0); // Execute immediately after current stack clears
+        }
+        function attachPageListeners(pageId) {
+             console.log("[Router] Attaching listeners for page:", pageId);
+             if (pageId === 'home') {
+                 attachListener('search-form', 'submit', handleSearch);
+             } else if (pageId === 'login') {
+                 attachListener('login-form', 'submit', (e) => handleAuthForm(e, 'login'));
+             } else if (pageId === 'register') {
+                 attachListener('register-form', 'submit', (e) => handleAuthForm(e, 'register'));
+             } else if (pageId === 'dashboard') {
+                 attachListener('request-product-form', 'submit', handleRequestProduct);
+             }
+        }
+
+        // --- Document Ready ---
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("DOM Content Loaded. Initializing...");
+            try {
+                // Inject page templates first
+                const pageHome = getElement('page-home');
+                const pageLogin = getElement('page-login');
+                const pageRegister = getElement('page-register');
+                const pageDashboard = getElement('page-dashboard');
+
+                // Check if containers exist before injecting
+                if(pageHome) pageHome.innerHTML = homeTemplate; else console.error("page-home container not found");
+                if(pageLogin) pageLogin.innerHTML = authFormTemplate('login'); else console.error("page-login container not found");
+                if(pageRegister) pageRegister.innerHTML = authFormTemplate('register'); else console.error("page-register container not found");
+                if(pageDashboard) pageDashboard.innerHTML = dashboardTemplate; else console.error("page-dashboard container not found");
+
+                console.log("Templates injected.");
+            } catch(e) { console.error("Error injecting templates:", e); return; }
+
+            const mobileMenuButton = getElement('mobile-menu-button');
+            if (mobileMenuButton) {
+                mobileMenuButton.addEventListener('click', () => {
+                    const mobileMenuEl = getElement('mobile-menu');
+                    if(mobileMenuEl) mobileMenuEl.classList.toggle('hidden');
+                });
+            } else { console.warn("Mobile menu button not found."); }
+
+            window.addEventListener('hashchange', handleRouteChange);
+
+            checkLoginState();
+            handleRouteChange(); // Show initial page based on hash or default
+            console.log("Initialization complete. Current hash:", window.location.hash);
+        });
+
+    </script>
+</body>
+</html>
+
