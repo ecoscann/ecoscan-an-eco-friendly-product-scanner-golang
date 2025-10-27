@@ -289,9 +289,12 @@
                     </div>
                     <button type="submit" class="btn btn-green w-full !py-3 !text-lg">Login</button>
                 </form>
-                <p class="text-center mt-6 text-gray-600">
-                    Don't have an account? <a href="#" class="nav-link font-medium text-leaf-green hover:underline" data-page="register">Sign up</a>
-                </p>
+                <p class="mt-6 text-center text-sm text-gray-400">
+    Don't have an account?
+    <a href="#" id="showRegisterLink" class="font-medium text-eco-green hover:underline">
+        Sign up
+    </a>
+</p>
             </div>
         </main>
 
@@ -315,9 +318,12 @@
                     </div>
                     <button type="submit" class="btn btn-green w-full !py-3 !text-lg">Create Account</button>
                 </form>
-                <p class="text-center mt-6 text-gray-600">
-                    Already have an account? <a href="#" class="nav-link font-medium text-leaf-green hover:underline" data-page="login">Log in</a>
-                </p>
+                <p class="mt-6 text-center text-sm text-gray-400">
+        Already have an account?
+        <a href="#" id="showLoginLink" class="font-medium text-eco-green hover:underline">
+        Log in here
+    </a>
+</p>
             </div>
         </main>
 
@@ -1093,6 +1099,28 @@
                     searchResultsContainer.classList.add('hidden');
                 }
             });
+
+            // === NAVIGATION FOR AUTH LINKS ===
+            // This finds the links you gave IDs to in Step 1
+            const showRegisterLink = document.getElementById('showRegisterLink');
+            const showLoginLink = document.getElementById('showLoginLink');
+
+            if (showRegisterLink) {
+                showRegisterLink.addEventListener('click', (e) => {
+                    e.preventDefault(); // Prevents the page from jumping
+                    navigate('register'); // Calls your function to show the register page
+                });
+            }
+
+            if (showLoginLink) {
+                showLoginLink.addEventListener('click', (e) => {
+                    e.preventDefault(); // Prevents the page from jumping
+                    navigate('login'); // Calls your function to show the login page
+                });
+            }
+
+            // === SEARCH LOGIC ===
+            // (Your existing search logic code probably starts here)
 
             // === INITIALIZATION ===
             function initApp() {
