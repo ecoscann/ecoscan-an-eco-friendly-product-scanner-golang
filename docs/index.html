@@ -1,659 +1,1200 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EcoScan - A Polished Guide to Greener Shopping</title>
+    <title>ecoScanAi</title>
+    <!-- 1. Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- 2. React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- 3. Babel (for JSX) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- 4. html5-qrcode (for barcode scanning) -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #f7fefc;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 6px;
         }
-        #main-content { flex-grow: 1; }
-        .header-glass {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+        ::-webkit-scrollbar-track {
+            background: #2d3748; /* gray-800 */
         }
-        .page { display: none; }
-        .page.active { display: block; animation: pageTransition 0.5s ease-out forwards; }
-        .loader {
-            border-top-color: #10B981;
-            animation: spin 1s linear infinite;
+        ::-webkit-scrollbar-thumb {
+            background: #4ade80; /* green-400 */
+            border-radius: 3px;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes pageTransition {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes error-shake {
-            0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-            20%, 40%, 60%, 80% { transform: translateX(5px); }
-        }
-        .error-shake { animation: error-shake 0.5s ease-in-out; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #eefbf7; }
-        ::-webkit-scrollbar-thumb { background-color: #34d399; border-radius: 10px; }
-        .btn { /* Base button class */
-             @apply font-bold py-3 px-8 rounded-full transition-all duration-300 transform hover:scale-[1.03] shadow-md hover:shadow-lg disabled:cursor-not-allowed flex items-center justify-center disabled:opacity-70;
-        }
-        .btn-primary {
-            @apply w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 text-white btn;
-        }
-        .btn-secondary {
-            @apply bg-emerald-100 text-emerald-700 font-medium px-4 py-2 rounded-full hover:bg-emerald-200 transition-colors btn;
-        }
-        .form-input {
-            @apply w-full px-4 py-3 rounded-xl bg-slate-100 border-2 border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all duration-200;
-        }
-        .card {
-            @apply bg-white rounded-2xl shadow-lg border border-slate-200/60 overflow-hidden hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col;
+        ::-webkit-scrollbar-thumb:hover {
+            background: #22c55e; /* green-500 */
         }
     </style>
-</head>
-<body class="text-slate-800 antialiased">
-
-    <!-- Header -->
-    <header class="header-glass border-b border-slate-200/80 sticky top-0 z-50">
-        <nav class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-            <a href="#home" class="flex items-center space-x-3 group">
-                <div class="bg-emerald-500 p-2 rounded-full group-hover:rotate-12 transition-transform">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                </div>
-                <h1 class="text-2xl font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">EcoScan</h1>
-            </a>
-            <div id="desktop-nav" class="hidden md:flex items-center space-x-2"></div>
-            <button id="mobile-menu-button" class="md:hidden p-2 rounded-md text-slate-600 hover:bg-slate-100"><svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" /></svg></button>
-        </nav>
-        <div id="mobile-menu" class="md:hidden hidden px-4 pt-2 pb-4 space-y-2 border-t border-slate-200/80"></div>
-    </header>
-
-    <!-- Main Content -->
-    <div id="main-content">
-        <div id="page-home" class="page"></div>
-        <div id="page-login" class="page"></div>
-        <div id="page-register" class="page"></div>
-        <div id="page-dashboard" class="page"></div>
-    </div>
-
-    <!-- Footer -->
-    <footer id="about" class="bg-slate-900 text-slate-400">
-        <div class="container mx-auto px-6 py-12 text-center"><h2 class="text-2xl font-bold text-white mb-2">About EcoScan</h2><p class="max-w-3xl mx-auto mb-6">We empower consumers to make environmentally conscious decisions. By providing transparent data, we believe we can collectively reduce our impact on the planet.</p><p class="text-sm">&copy; 2025 EcoScan. All rights reserved.</p></div>
-    </footer>
-
-    <!-- Notification Toasts -->
-    <div id="notification-container" class="fixed bottom-5 right-5 z-50 space-y-3 w-80"></div>
-
     <script>
-        const API_BASE_URL = 'https://ecoscan-an-eco-friendly-product-scanner.onrender.com';
-        const pages = ['home', 'login', 'register', 'dashboard'];
-
-        // --- TEMPLATES ---
-        const homeTemplate = `
-            <div class="relative min-h-[70vh] flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 text-center overflow-hidden">
-                <div class="absolute inset-0 bg-gradient-to-b from-emerald-50 to-transparent z-0"></div>
-                <div class="relative z-10">
-                    <h2 class="text-4xl md:text-6xl font-extrabold text-slate-900 mb-4 tracking-tight">Shop Smart, Live Green.</h2>
-                    <p class="text-lg text-slate-600 max-w-2xl mx-auto mb-10">Find sustainable products effortlessly. Enter a barcode to reveal its environmental story.</p>
-                    <form id="search-form" class="w-full max-w-xl mx-auto flex flex-col sm:flex-row items-center gap-2 bg-white p-2 rounded-full shadow-2xl hover:shadow-emerald-200 transition-all duration-300 border border-slate-200">
-                        <input type="text" id="barcode-input" placeholder="Enter product barcode..." class="w-full sm:flex-1 py-3 px-6 text-slate-700 bg-transparent border-none focus:outline-none focus:ring-0">
-                        <button type="submit" class="btn-primary py-3.5">Analyze</button>
-                    </form>
-                </div>
-            </div>
-            <main id="results-container" class="container mx-auto px-4 sm:px-6 lg:px-8 pb-16 hidden"></main>
-        `;
-        const authFormTemplate = (type) => {
-             const isLogin = type === 'login';
-             return `
-             <div class="min-h-[70vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-                 <div class="w-full max-w-md space-y-8 bg-white p-10 rounded-3xl shadow-2xl border border-slate-200/80">
-                     <div>
-                         <h2 class="text-center text-3xl font-extrabold text-slate-900">${isLogin ? 'Sign in to your account' : 'Create your account'}</h2>
-                         <p class="mt-2 text-center text-sm text-slate-600">Or <a href="${isLogin ? '#register' : '#login'}" class="font-medium text-emerald-600 hover:text-emerald-500">${isLogin ? 'create a new account' : 'sign in'}</a></p>
-                     </div>
-                     <form id="${type}-form" class="mt-8 space-y-6">
-                         <div class="space-y-4 rounded-md">
-                             ${!isLogin ? `<div><label for="register-name" class="form-label">Full Name</label><input id="register-name" name="name" type="text" required class="form-input"></div>` : ''}
-                             <div><label for="${type}-email" class="form-label">Email address</label><input id="${type}-email" name="email" type="email" autocomplete="email" required class="form-input"></div>
-                             <div><label for="${type}-password" class="form-label">Password</label><input id="${type}-password" name="password" type="password" autocomplete="${isLogin ? 'current-password' : 'new-password'}" required class="form-input" minlength="8"></div>
-                         </div>
-                         <div id="${type}-error" class="text-red-500 text-sm hidden font-medium"></div>
-                         <div><button type="submit" class="btn-primary"><span>${isLogin ? 'Sign In' : 'Create Account'}</span></button></div>
-                     </form>
-                 </div>
-             </div>`;
+        // Custom Tailwind theme configuration
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'eco-dark': '#1a202c', // gray-900
+                        'eco-dark-card': '#2d3748', // gray-800
+                        'eco-green': '#4ade80', // green-400
+                        'eco-green-dark': '#22c55e', // green-500
+                    }
+                },
+            },
         };
-        const dashboardTemplate = `
-              <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                  <div class="bg-gradient-to-r from-emerald-500 to-green-500 text-white p-8 md:p-12 rounded-3xl shadow-xl mb-12">
-                     <h2 class="text-4xl font-bold">Your Dashboard</h2>
-                     <p id="welcome-message" class="text-lg text-emerald-100 mt-2 opacity-90">Welcome back!</p>
-                 </div>
-                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                     <div class="lg:col-span-2 bg-white p-8 rounded-3xl shadow-2xl border border-slate-200/80">
-                         <h3 class="text-2xl font-bold text-slate-800 mb-1">Contribute to Our Database</h3>
-                         <p class="text-slate-500 mb-6">Found a product we don't have? Submit it here and earn points!</p>
-                         <form id="request-product-form" class="space-y-5">
-                             <div><label for="req-barcode" class="form-label">Barcode</label><input id="req-barcode" type="text" required class="form-input"></div>
-                             <div><label for="req-name" class="form-label">Product Name</label><input id="req-name" type="text" required class="form-input"></div>
-                             <div><label for="req-brand" class="form-label">Brand Name</label><input id="req-brand" type="text" class="form-input"></div>
-                             <div><label for="req-image" class="form-label">Product Image</label><input id="req-image" type="file" required accept="image/png, image/jpeg, image/webp" class="block w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 transition-colors cursor-pointer"></div>
-                             <div id="request-error" class="text-red-500 text-sm hidden pt-1 font-medium"></div>
-                             <div class="pt-2"><button type="submit" class="btn-primary"><span>Submit Product</span></button></div>
-                         </form>
-                     </div>
-                     <div class="bg-white p-8 rounded-3xl shadow-2xl border border-slate-200/80 flex flex-col items-center justify-center text-center">
-                          <div class="relative"><svg class="h-40 w-40" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" stroke="#e2e8f0" stroke-width="10" fill="transparent" /><circle id="points-circle" cx="50" cy="50" r="45" stroke="#10B981" stroke-width="10" fill="transparent" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="283" transform="rotate(-90 50 50)" style="transition: stroke-dashoffset 1s ease-out;" /></svg><p class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-4xl font-extrabold text-emerald-600" id="user-points">0</p></div>
-                          <h3 class="text-xl font-bold mt-6 text-slate-800">Contribution Points</h3>
-                          <p class="text-sm mt-2 text-slate-500 max-w-xs">Each product you add helps thousands make better choices.</p>
-                     </div>
-                 </div>
-             </main>
-         `;
+    </script>
+</head>
+<body class="bg-eco-dark text-white font-sans antialiased">
+    <div id="root"></div>
 
-        // --- UTILITY FUNCTIONS ---
-        function getElement(id) {
-            const el = document.getElementById(id);
-            // Don't log error here, handle null checks where the function is called
-            return el;
-        }
+    <!-- This is where all the React code lives -->
+    <script type="text/babel">
 
-        // --- SPA ROUTER & STATE ---
-        function showPage(pageId) {
-            console.log("[Router] Navigating to page:", pageId);
-            const user = localStorage.getItem('user');
-            // Redirect logic
-            if (pageId === 'dashboard' && !user) {
-                console.warn("[Router] User not logged in, redirecting to login");
-                window.location.hash = '#login';
-                return;
-            }
-            if ((pageId === 'login' || pageId === 'register') && user) {
-                 console.warn("[Router] User logged in, redirecting to dashboard");
-                window.location.hash = '#dashboard';
-                return;
-            }
+        const { useState, useEffect, useCallback, StrictMode } = React;
 
-            // Show/hide pages
-            let pageFound = false;
-            pages.forEach(pId => {
-                const pageEl = getElement(`page-${pId}`);
-                if (pageEl) {
-                   const shouldBeActive = pId === pageId;
-                   if(shouldBeActive) pageFound = true;
-                   pageEl.classList.toggle('active', shouldBeActive);
-                   // Inject content if not already done
-                   if (shouldBeActive && !pageEl.dataset.initialized) {
-                       console.log(`[Router] Injecting content for ${pageId}`);
-                       if (pageId === 'home') pageEl.innerHTML = homeTemplate;
-                       else if (pageId === 'login') pageEl.innerHTML = authFormTemplate('login');
-                       else if (pageId === 'register') pageEl.innerHTML = authFormTemplate('register');
-                       else if (pageId === 'dashboard') pageEl.innerHTML = dashboardTemplate;
-                       pageEl.dataset.initialized = 'true'; // Mark as initialized
-                       // Attach listeners immediately after injection
-                       attachPageListeners(pageId);
-                   } else if (shouldBeActive) {
-                       // Re-attach listeners if content exists but might have been detached
-                       attachPageListeners(pageId);
-                   }
-                } else {
-                   console.error(`[Router] Core page element not found: page-${pId}.`);
-                }
-            });
-            // Default to home if hash doesn't match
-            if (!pageFound && pageId !== 'home') {
-                 console.warn(`[Router] Unknown page route: ${pageId}, defaulting to home.`);
-                 window.location.hash = '#home';
-                 return;
-            }
+        // --- Configuration ---
+        // !!! IMPORTANT: Replace this with your live backend URL
+        const API_BASE_URL = "https://ecoscan-an-eco-friendly-product-scanner.onrender.com/api/v1";
 
-            window.scrollTo(0, 0);
-
-            if (pageId === 'dashboard' && user) {
-                 try {
-                     const userData = JSON.parse(user);
-                     console.log("[Router] Updating dashboard UI for user:", userData);
-                     updateDashboard(userData);
-                 } catch (e) {
-                     console.error("[Router] Failed to parse user data from localStorage for dashboard", e);
-                     logout(); // Corrupted data
-                 }
-            }
-        }
-
-        function handleRouteChange() {
-            const hash = window.location.hash.substring(1).replace(/\/$/, '') || 'home';
-            console.log("[Router] Hash changed to:", hash);
-            showPage(hash);
-        }
-
-        function checkLoginState() {
-             console.log("[Auth] Checking login state...");
-            const token = localStorage.getItem('accessToken');
-            const desktopNav = getElement('desktop-nav');
-            const mobileMenu = getElement('mobile-menu');
-
-            if (!desktopNav || !mobileMenu) { console.error("[Auth] Nav elements not found!"); return; }
-
-            // Clear previous content
-            desktopNav.innerHTML = '';
-            mobileMenu.innerHTML = '';
+        // --- API Helper Functions ---
+        
+        /**
+         * A wrapper for fetch to handle API calls, auth, and errors
+         * @param {string} endpoint - The API endpoint (e.g., "/auth/login")
+         * @param {object} options - Fetch options (method, headers, body)
+         * @param {string|null} token - Optional auth token
+         */
+        const api = async (endpoint, options = {}, token = null) => {
+            const headers = {
+                'Content-Type': 'application/json',
+                ...options.headers,
+            };
 
             if (token) {
-                 console.log("[Auth] User IS logged in.");
-                desktopNav.innerHTML = `<a href="#home" class="text-slate-600 hover:text-emerald-600 font-medium transition-colors px-3 py-2 rounded-md">Search</a><a href="#dashboard" class="text-slate-600 hover:text-emerald-600 font-medium transition-colors px-3 py-2 rounded-md">Dashboard</a><button id="logout-button" class="bg-slate-200 text-slate-700 font-medium px-4 py-2 rounded-full hover:bg-slate-300 transition-colors">Logout</button>`;
-                mobileMenu.innerHTML = `<a href="#home" class="block text-slate-600 hover:text-emerald-600 font-medium py-2">Search</a><a href="#dashboard" class="block text-slate-600 hover:text-emerald-600 font-medium py-2">Dashboard</a><button id="mobile-logout-button" class="w-full text-left bg-slate-200 text-slate-700 font-medium px-3 py-2 mt-2 rounded-md hover:bg-slate-300 transition-colors">Logout</button>`;
-
-                // Attach listeners after elements are guaranteed to be in DOM
-                setTimeout(() => {
-                    attachListener('logout-button', 'click', logout);
-                    attachListener('mobile-logout-button', 'click', logout);
-                }, 0);
-
-            } else {
-                 console.log("[Auth] User IS NOT logged in.");
-                desktopNav.innerHTML = `<a href="#home" class="text-slate-600 hover:text-emerald-600 font-medium transition-colors px-3 py-2 rounded-md">Search</a><a href="#login" class="text-slate-600 hover:text-emerald-600 font-medium transition-colors px-3 py-2 rounded-md">Login</a><a href="#register" class="btn-secondary">Sign Up</a>`;
-                mobileMenu.innerHTML = `<a href="#home" class="block text-slate-600 hover:text-emerald-600 font-medium py-2">Search</a><a href="#login" class="block text-slate-600 hover:text-emerald-600 font-medium py-2">Login</a><a href="#register" class="block bg-emerald-100 text-emerald-700 font-medium px-3 py-2 mt-2 rounded-md hover:bg-emerald-200 transition-colors">Sign Up</a>`;
-            }
-        }
-
-        function logout() {
-            console.log("[Auth] Executing logout function...");
-            localStorage.clear();
-            checkLoginState(); // Update nav immediately
-            window.location.hash = '#login'; // Navigate to login
-            showNotification('You have been logged out.', 'info');
-        }
-
-        // --- API CALLS ---
-        async function apiCall(endpoint, options = {}) {
-            const token = localStorage.getItem('accessToken');
-            const headers = { ...options.headers };
-            headers['Accept'] = 'application/json'; // Ensure server knows we want JSON
-
-            // Do NOT set Content-Type for FormData
-            if (options.body && !(options.body instanceof FormData)) {
-                headers['Content-Type'] = 'application/json';
-            }
-
-            // Add Authorization header ONLY if token exists
-            if (token) {
-                console.log(`%c[API] Adding Auth token for: ${endpoint}`, "color: blue;");
                 headers['Authorization'] = `Bearer ${token}`;
-            } else {
-                 console.warn(`[API] No auth token found for: ${endpoint}. Request might fail if protected.`);
             }
-
-            console.log(`[API] Calling: ${options.method || 'GET'} ${API_BASE_URL}${endpoint}`);
 
             try {
-                const response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
-                console.log(`[API] Response Status for ${endpoint}:`, response.status);
-                const contentType = response.headers.get("content-type");
-                let responseText = '';
-                let data = {};
-
-                try { responseText = await response.text(); } catch {} // Get text always
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                    ...options,
+                    headers,
+                });
 
                 if (!response.ok) {
-                     console.error(`[API] Error Response Text for ${endpoint} (Status ${response.status}):`, responseText);
-                     // Try parsing error as JSON
-                     try { data = JSON.parse(responseText); } catch { data = { message: responseText || `Request failed: ${response.statusText || response.status}` }; }
-
-                     if (response.status === 401) {
-                        console.error("[API] Unauthorized (401). Forcing logout.");
-                        logout();
-                        throw new Error("SESSION_EXPIRED"); // Specific error code
-                    }
-                    throw new Error(data.message || data.error || `Request failed: ${response.statusText || response.status}`);
+                    const errorData = await response.json().catch(() => ({ message: "An unknown error occurred" }));
+                    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                }
+                
+                // Handle responses with no content (e.g., 204 No Content)
+                if (response.status === 204) {
+                    return null;
                 }
 
-                // If response is OK
-                if (response.status === 204) { return { message: "Success" }; } // Handle No Content
-
-                if (contentType && contentType.includes("application/json")) {
-                    try {
-                        data = JSON.parse(responseText); // Parse the text we already got
-                    } catch (err) {
-                        console.error("[API] JSON parsing error for OK response:", err, "Response Text:", responseText);
-                        throw new Error(`Invalid JSON received from server (Status: ${response.status})`);
-                    }
-                } else { // Handle successful non-JSON
-                    console.log(`[API] Non-JSON success response for ${endpoint}:`, responseText);
-                    data = { message: responseText || "Success" };
-                }
-
-                console.log(`[API] Call Success for ${endpoint}:`, data);
-                return data;
+                return await response.json();
             } catch (error) {
-                 if (error.message !== "SESSION_EXPIRED") {
-                     console.error(`[API] Call Error (${endpoint}):`, error);
-                     showNotification(`Error: ${error.message || 'Network error or invalid server response.'}`, 'error');
-                 } else {
-                      showNotification('Your session may have expired. Please log in again.', 'error');
-                 }
-                throw error; // Re-throw error
+                console.error("API Error:", error.message);
+                throw error; // Re-throw to be caught by the component
             }
-        }
+        };
 
+        // --- Reusable Components ---
 
-        // --- ASYNC EVENT HANDLERS ---
-        async function handleAuthForm(e, type) {
-            e.preventDefault();
-            const form = e.target;
-            if (!form) return;
-            const errorDiv = getElement(`${type}-error`);
-            const submitBtn = form.querySelector('button[type="submit"]');
-            if (!submitBtn || !submitBtn.querySelector('span')) return;
-            const originalBtnHTML = submitBtn.innerHTML; // Store original HTML
+        /**
+         * Leaf Icon Component
+         */
+        const LeafIcon = ({ className }) => (
+            <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M15.402 4.41a.75.75 0 01.79 1.137l-8.01 8.01a.75.75 0 01-1.06 0l-4.5-4.5a.75.75 0 111.06-1.06l3.97 3.97 7.25-7.25a.75.75 0 01.27-.29z" clipRule="evenodd" transform="translate(0, -2)" />
+                <path d="M10 18a.75.75 0 01-.75-.75V8.334a.75.75 0 011.5 0v8.916a.75.75 0 01-.75.75z" transform="rotate(45 10 10)" />
+                <path d="M10 18a.75.75 0 01-.75-.75V8.334a.75.75 0 011.5 0v8.916a.75.75 0 01-.75.75z" transform="rotate(-45 10 10)" />
+            </svg>
+        );
 
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = `<span class="loader ease-linear rounded-full border-2 border-t-2 border-gray-200 h-5 w-5"></span>`;
-            if (errorDiv) errorDiv.classList.add('hidden');
+        /**
+         * Search Icon Component
+         */
+        const SearchIcon = ({ className }) => (
+            <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+        );
+        
+        /**
+         * Close Icon Component
+         */
+        const CloseIcon = ({ className }) => (
+            <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        );
 
-            try {
-                const data = Object.fromEntries(new FormData(form).entries());
-                 console.log(`[Auth] Attempting ${type} with data:`, data);
-                if (type === 'login') {
-                    const result = await apiCall('/api/v1/auth/login', { method: 'POST', body: JSON.stringify(data) });
-                    console.log("[Auth] Login API response:", result);
-                    if (result.user && result.access_token) {
-                        localStorage.setItem('accessToken', result.access_token);
-                        localStorage.setItem('refreshToken', result.refresh_token); // Assuming backend sends this too
-                        localStorage.setItem('user', JSON.stringify(result.user));
-                        checkLoginState(); // Update nav first
-                        window.location.hash = '#dashboard'; // Then navigate
-                        // Welcome notification will show when dashboard loads
-                    } else { throw new Error("Login failed. Invalid response structure."); }
-                } else { // register
-                     console.log("[Auth] Attempting registration...");
-                    await apiCall('/api/v1/auth/register', { method: 'POST', body: JSON.stringify(data) });
-                    window.location.hash = '#login';
-                    showNotification('Account created successfully! Please log in.', 'success');
-                }
-            } catch (error) {
-                 console.error(`[Auth] ${type} failed:`, error);
-                if(errorDiv && error.message !== "SESSION_EXPIRED") {
-                    errorDiv.textContent = error.message;
-                    errorDiv.classList.remove('hidden');
-                    errorDiv.classList.add('error-shake');
-                    setTimeout(() => { if (errorDiv) errorDiv.classList.remove('error-shake'); }, 500);
-                }
-            } finally {
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalBtnHTML; // Restore original button content
-                }
-            }
-        }
-
-        async function handleRequestProduct(e) {
-            e.preventDefault();
-            const form = e.target;
-            if (!form) return;
-            const errorDiv = getElement('request-error');
-            const submitBtn = form.querySelector('button[type="submit"]');
-            if (!submitBtn || !submitBtn.querySelector('span')) return;
-            const originalBtnHTML = submitBtn.innerHTML;
-
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = `<span class="loader ease-linear rounded-full border-2 border-t-2 border-gray-200 h-5 w-5"></span>`;
-            if (errorDiv) errorDiv.classList.add('hidden');
-
-            try {
-                const formData = new FormData();
-                const barcodeInput = getElement('req-barcode');
-                const nameInput = getElement('req-name');
-                const brandInput = getElement('req-brand');
-                const imageInput = getElement('req-image');
-
-                if (!barcodeInput || !nameInput || !brandInput || !imageInput) throw new Error("Form elements not found.");
-
-                formData.append('barcode', barcodeInput.value);
-                formData.append('name', nameInput.value);
-                formData.append('brandname', brandInput.value); // Lowercase 'n'
-                const imageFile = imageInput.files[0];
-                if (!imageFile) throw new Error("Product image is required.");
-                formData.append('productImage', imageFile);
-
-                console.log("[Product] Submitting product request...");
-                await apiCall('/api/v1/products/request', { method: 'POST', body: formData });
-                showNotification('Product submitted for review!', 'success');
-                form.reset();
-            } catch (error) {
-                 console.error("[Product] Request failed:", error);
-                 if(errorDiv && error.message !== "SESSION_EXPIRED") {
-                    errorDiv.textContent = error.message;
-                    errorDiv.classList.remove('hidden');
-                    errorDiv.classList.add('error-shake');
-                    setTimeout(() => { if (errorDiv) errorDiv.classList.remove('error-shake'); }, 500);
-                 }
-                 // Notification handled by apiCall or logout
-            } finally {
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalBtnHTML;
-                }
-            }
-        }
-
-        async function handleSearch(e) {
-             e.preventDefault();
-             const form = e.target;
-             if (!form) return;
-            const barcodeInput = getElement('barcode-input');
-            const resultsContainer = getElement('results-container');
-            if (!barcodeInput || !resultsContainer) return;
-
-            const barcode = barcodeInput.value.trim();
-            if (!barcode) {
-                showNotification('Please enter a barcode.', 'error');
-                return;
-            }
-
-            resultsContainer.classList.remove('hidden');
-            resultsContainer.innerHTML = `<div class="text-center py-16"><div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-200 h-12 w-12 mx-auto mb-4"></div><p class="text-slate-600 font-medium">Analyzing product...</p></div>`;
-
-            try {
-                console.log("[Search] Searching for barcode:", barcode);
-                const data = await apiCall(`/api/v1/products/barcode/${barcode}`);
-                 console.log("[Search] Response data:", data);
-                // CRITICAL CHECK: Ensure data has product AND score is a number
-                if (data && data.product && typeof data.score === 'number' && !isNaN(data.score)) {
-                    renderResults(data);
-                } else {
-                    console.error("[Search] Invalid data structure received:", data);
-                     if(data && data.product){
-                         showNotification('Product data received but score is missing or invalid.', 'warn');
-                         renderResults({...data, score: 0}); // Render with default score 0
-                     } else {
-                         throw new Error(data.message || "Received incomplete product data from server.");
-                     }
-                }
-            } catch (error) {
-                 console.error("[Search] Failed:", error);
-                 // Check if it was explicitly a 404 handled by apiCall logic or backend message
-                const isNotFound = error.message && (error.message.toLowerCase().includes('not found') || error.message.includes('404'));
-                if (isNotFound) {
-                     resultsContainer.innerHTML = `<div class="text-center p-8 bg-white border-2 border-amber-200 rounded-3xl shadow-lg pageTransition"><h3 class="text-2xl font-bold text-amber-600">Product Not Found</h3><p class="text-slate-500 mt-2 text-lg">We couldn't find barcode <span class="font-semibold">${barcode}</span>. You can help by adding it!</p><a href="#dashboard" class="mt-4 inline-block btn-secondary">Add New Product</a></div>`;
-                } else if (error.message !== "SESSION_EXPIRED") { // Don't show generic error if logged out
-                     resultsContainer.innerHTML = `<div class="text-center p-8 bg-white border-2 border-red-200 rounded-3xl shadow-lg pageTransition"><h3 class="text-2xl font-bold text-red-600">Error</h3><p class="text-red-500 mt-2 text-lg">${error.message}</p></div>`;
-                } else {
-                    // Clear loading if session expired
-                    resultsContainer.innerHTML = '';
-                    resultsContainer.classList.add('hidden');
-                }
-            }
-        }
-
-        // --- UI & NOTIFICATION FUNCTIONS ---
-        function showNotification(message, type = 'info') {
-             const container = getElement('notification-container');
-             if (!container) return;
-             // Rest of function... (unchanged)
-        }
-        function renderResults(data) {
-             const resultsContainer = getElement('results-container');
-             if (!resultsContainer || !data || !data.product) return;
-
-              console.log("[Render] Rendering results with score:", data.score, "Rating:", data.score_rating);
-
-             resultsContainer.innerHTML = `
-                 <div id="product-details-content" class="pageTransition">
-                     <div class="bg-white p-6 md:p-8 rounded-3xl shadow-2xl border border-slate-200/80 grid grid-cols-1 lg:grid-cols-5 gap-8 items-center">
-                         <div class="lg:col-span-2 flex flex-col items-center">
-                             <img src="${data.product.image_url || 'https://placehold.co/400x400/e2e8f0/64748b?text=Image+Missing'}" alt="${data.product.name || 'Product Image'}" class="w-full max-w-sm mx-auto lg:max-w-full h-auto object-contain rounded-2xl bg-slate-100 p-2 aspect-square" onerror="this.onerror=null;this.src='https://placehold.co/400x400/e2e8f0/64748b?text=Image+Not+Found';">
-                         </div>
-                         <div class="lg:col-span-3" id="product-info-content"></div>
-                     </div>
-                     <div class="mt-16">
-                         <h3 class="text-3xl md:text-4xl font-bold text-slate-900 mb-8 text-center">Greener Alternatives</h3>
-                         <div id="alternatives-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6"></div>
-                     </div>
-                 </div>`;
-             renderProductDetails(data.product, data.score, data.score_rating); // Pass score and rating
-             renderAlternatives(data.alternatives);
-        }
-
-        function renderProductDetails(product, score, scoreRating) {
-            const infoContent = getElement('product-info-content');
-            if (!infoContent) return;
-
-            const validScore = (typeof score === 'number' && !isNaN(score)) ? score : 0;
-            console.log("[Render] Rendering details with validScore:", validScore, "Rating:", scoreRating);
-            const validScoreRating = scoreRating || getScoreRating(validScore);
-
-            const scoreColor = validScore > 80 ? 'text-emerald-500' : validScore > 60 ? 'text-green-500' : validScore > 30 ? 'text-yellow-500' : 'text-red-500';
-            const scoreRingColor = validScore > 80 ? '#10B981' : validScore > 60 ? '#22C55E' : validScore > 30 ? '#EAB308' : '#EF4444';
-
-            infoContent.innerHTML = `
-                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                    <div class="flex-shrink-0">
-                        <div class="relative h-36 w-36">
-                            <svg class="absolute inset-0 -rotate-90" viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="45" stroke="#e2e8f0" stroke-width="10" fill="transparent" />
-                                <circle id="score-circle" cx="50" cy="50" r="45" stroke="${scoreRingColor}" stroke-width="10" fill="transparent" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="283" style="transition: stroke-dashoffset 1s ease-out;" />
-                            </svg>
-                            <div class="absolute inset-0 flex flex-col items-center justify-center">
-                                <p class="text-4xl font-black ${scoreColor}">${validScore}</p>
-                                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">Eco Score</p>
-                            </div>
-                        </div>
+        /**
+         * Generic Modal Component
+         */
+        const Modal = ({ children, onClose, title }) => (
+            <div 
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm"
+                onClick={onClose}
+            >
+                <div 
+                    className="bg-eco-dark-card rounded-lg shadow-2xl w-full max-w-md m-4 max-h-[90vh] overflow-y-auto"
+                    onClick={e => e.stopPropagation()} // Prevent closing modal on inner click
+                >
+                    <div className="flex items-center justify-between p-5 border-b border-gray-700">
+                        <h3 className="text-xl font-semibold text-eco-green">{title}</h3>
+                        <button 
+                            onClick={onClose}
+                            className="text-gray-400 hover:text-white transition-colors"
+                        >
+                            <CloseIcon className="w-6 h-6" />
+                        </button>
                     </div>
-                    <div>
-                        <span class="inline-block bg-emerald-100 text-emerald-800 text-sm font-semibold px-3 py-1 rounded-full mb-3">${product.category || 'N/A'}</span>
-                        <h2 class="text-3xl font-bold text-slate-900">${product.name || 'Unknown Product'}</h2>
-                        <p class="text-lg text-slate-500 mt-1">${product.brand_name || 'Unknown Brand'}</p>
-                        <p class="mt-4 font-semibold text-lg ${scoreColor}">${validScoreRating}</p>
+                    <div className="p-6">
+                        {children}
                     </div>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-slate-700 mt-8">
-                    <div class="flex items-start space-x-4 p-4 bg-slate-50 rounded-xl"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg><div><p class="text-sm font-medium text-slate-500">Origin</p><p class="font-semibold text-lg capitalize">${product.manufacturing_location || 'N/A'}</p></div></div>
-                    <div class="flex items-start space-x-4 p-4 bg-slate-50 rounded-xl"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12l-1.148-1.148a2 2 0 00-2.828 0L12 15.028l-4.024-4.024a2 2 0 00-2.828 0L4 12m16 0l-4.5-4.5m-4.024-4.024L12 2.944m-4.5 4.5L12 2.944" /></svg><div><p class="text-sm font-medium text-slate-500">Packaging</p><p class="font-semibold text-lg capitalize">${(product.packaging_material || 'N/A').replace(/_/g, ' ')}</p></div></div>
-                    <div class="flex items-start space-x-4 p-4 bg-slate-50 rounded-xl"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg><div><p class="text-sm font-medium text-slate-500">Disposal</p><p class="font-semibold text-lg capitalize">${product.disposal_method || 'N/A'}</p></div></div>
-                    <div class="flex items-start space-x-4 p-4 bg-slate-50 rounded-xl"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01" /></svg><div><p class="text-sm font-medium text-slate-500">Price</p><p class="font-semibold text-lg">$${(typeof product.price === 'number' && !isNaN(product.price)) ? product.price.toFixed(2) : 'N/A'}</p></div></div>
-                </div>`;
+            </div>
+        );
+        
+        /**
+         * Notification Toast Component
+         */
+        const Notification = ({ message, type = 'error', onDismiss }) => {
+            if (!message) return null;
 
-            // Animate score circle after rendering
-            requestAnimationFrame(() => {
-                setTimeout(() => {
-                    const circle = getElement('score-circle');
-                    if (circle) {
-                        const radius = circle.r.baseVal.value;
-                        const circumference = 2 * Math.PI * radius;
-                        const offset = circumference - (validScore / 100) * circumference;
-                        circle.style.strokeDashoffset = offset;
-                    } else { console.warn("Score circle element not found after rendering product details"); }
-                }, 100);
-            });
-        }
-        function getScoreRating(score) { /* ... unchanged ... */ }
-        function renderAlternatives(alternatives) { /* ... unchanged ... */ }
-        function getPackagingBadge(material) { /* ... unchanged ... */ }
-        function updateDashboard(user) { /* ... unchanged ... */ }
+            const bgColor = type === 'error' ? 'bg-red-500' : 'bg-eco-green-dark';
+            
+            useEffect(() => {
+                const timer = setTimeout(onDismiss, 3000);
+                return () => clearTimeout(timer);
+            }, [message, onDismiss]);
 
-        // --- ATTACH EVENT LISTENERS DYNAMICALLY (REFINED) ---
-        const activeListeners = {}; // Stores { listenerKey: { element, handler } }
-        function attachListener(elementId, eventType, handler) {
-            // Use setTimeout to ensure element exists after innerHTML injection
-            setTimeout(() => {
-                const element = getElement(elementId);
-                if (element) {
-                     const listenerKey = `${elementId}-${eventType}`;
-                     // Remove previous listener if exists
-                     if(activeListeners[listenerKey]){
-                         activeListeners[listenerKey].element.removeEventListener(eventType, activeListeners[listenerKey].handler);
-                         console.log(`[Listener] Removed old ${eventType} listener for ${elementId}`);
-                     }
-                     // Add new listener
-                     element.addEventListener(eventType, handler);
-                     // Store reference
-                     activeListeners[listenerKey] = { element: element, handler: handler };
-                     console.log(`[Listener] Attached ${eventType} listener to ${elementId}`);
-                } else {
-                     console.warn(`[Listener] Element not found: ${elementId}. Listener not attached.`);
+            return (
+                <div className={`fixed top-20 right-5 z-50 p-4 rounded-lg shadow-lg text-white ${bgColor}`}>
+                    {message}
+                    <button onClick={onDismiss} className="ml-4 font-bold">X</button>
+                </div>
+            );
+        };
+        
+        /**
+         * Reusable Product Card
+         */
+        const ProductCard = ({ product, onClick }) => (
+            <div 
+                className="bg-eco-dark-card rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-eco-green/20 hover:shadow-lg cursor-pointer"
+                onClick={() => onClick(product)}
+            >
+                <img 
+                    src={product.image_url || 'https://placehold.co/400x300/2d3748/4ade80?text=No+Image'} 
+                    alt={product.name} 
+                    className="w-full h-40 object-cover"
+                    onError={(e) => e.target.src = 'https://placehold.co/400x300/2d3748/4ade80?text=No+Image'}
+                />
+                <div className="p-4">
+                    <h3 className="text-lg font-semibold text-white truncate">{product.name}</h3>
+                    <p className="text-sm text-gray-400 truncate">{product.brand_name}</p>
+                    <div className="mt-2 flex items-center justify-between">
+                        <span className="text-lg font-bold text-eco-green">Score: {product.score}</span>
+                        <span className="text-sm text-gray-300">${product.price.toFixed(2)}</span>
+                    </div>
+                </div>
+            </div>
+        );
+
+
+        // --- Page/View Components ---
+
+        /**
+         * Header Component
+         */
+        const Header = ({ auth, onNavClick, onLogout }) => (
+            <header className="sticky top-0 z-40 w-full bg-eco-dark/80 backdrop-blur-lg border-b border-gray-700 shadow-lg">
+                <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center justify-between h-16">
+                        <div 
+                            className="flex-shrink-0 flex items-center gap-2 cursor-pointer"
+                            onClick={() => onNavClick('home')}
+                        >
+                            <LeafIcon className="w-8 h-8 text-eco-green" />
+                            <span className="text-2xl font-bold text-white">ecoScanAi</span>
+                        </div>
+                        
+                        {/* Desktop Nav */}
+                        <div className="hidden sm:flex sm:items-center sm:gap-4">
+                            <button onClick={() => onNavClick('home')} className="text-gray-300 hover:text-eco-green px-3 py-2 rounded-md text-sm font-medium transition-colors">Home</button>
+                            <button onClick={() => onNavClick('about')} className="text-gray-300 hover:text-eco-green px-3 py-2 rounded-md text-sm font-medium transition-colors">About Us</button>
+                            <button onClick={() => onNavClick('scoring')} className="text-gray-300 hover:text-eco-green px-3 py-2 rounded-md text-sm font-medium transition-colors">Scoring</button>
+                            
+                            <div className="w-px h-6 bg-gray-600 mx-2"></div>
+                            
+                            {auth ? (
+                                <>
+                                    <button 
+                                        onClick={() => onNavClick('dashboard')} 
+                                        className="text-gray-300 hover:text-eco-green px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                                    >
+                                        Dashboard
+                                    </button>
+                                    <button 
+                                        onClick={onLogout}
+                                        className="bg-eco-green-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-eco-green transition-all"
+                                    >
+                                        Logout
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <button 
+                                        onClick={() => onNavClick('login')} 
+                                        className="text-gray-300 hover:text-eco-green px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                                    >
+                                        Login
+                                    </button>
+                                    <button 
+                                        onClick={() => onNavClick('register')}
+                                        className="bg-eco-green text-eco-dark px-4 py-2 rounded-full text-sm font-medium hover:bg-eco-green-dark hover:text-white transition-all"
+                                    >
+                                        Create Account
+                                    </button>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Mobile Menu Button (placeholder) */}
+                        <div className="sm:hidden">
+                            {/* You can add a mobile menu dropdown here if needed */}
+                            <span className="text-gray-400 text-sm">Menu</span>
+                        </div>
+                    </div>
+                </nav>
+            </header>
+        );
+
+        /**
+         * Barcode Scanner Component
+         */
+        const BarcodeScanner = ({ onScanSuccess, onScanError }) => {
+            const scannerRef = React.useRef(null);
+
+            useEffect(() => {
+                // Check if the scanner is already initialized
+                if (scannerRef.current) {
+                    return;
                 }
-            }, 0); // Execute immediately after current stack clears
+
+                // Initialize the scanner
+                const html5QrcodeScanner = new Html5QrcodeScanner(
+                    "qr-reader", // ID of the div element
+                    { 
+                        fps: 10, 
+                        qrbox: { width: 250, height: 150 },
+                        rememberLastUsedCamera: true,
+                        supportedScanTypes: [
+                            Html5QrcodeScanType.SCAN_TYPE_CAMERA,
+                        ]
+                    },
+                    false // verbose
+                );
+
+                const scanSuccess = (decodedText, decodedResult) => {
+                    // Stop the scanner
+                    html5QrcodeScanner.clear().catch(err => console.error("Failed to clear scanner", err));
+                    onScanSuccess(decodedText);
+                };
+
+                const scanError = (errorMessage) => {
+                    // handle scan error, but we can ignore most common ones
+                    // onScanError(errorMessage);
+                };
+
+                // Start scanning
+                html5QrcodeScanner.render(scanSuccess, scanError);
+                
+                // Store scanner instance to clear it on unmount
+                scannerRef.current = html5QrcodeScanner;
+
+                // Cleanup function
+                return () => {
+                    if (scannerRef.current) {
+                        scannerRef.current.clear().catch(err => {
+                            console.error("Failed to clear html5QrcodeScanner on unmount", err);
+                        });
+                        scannerRef.current = null;
+                    }
+                };
+            }, [onScanSuccess, onScanError]);
+
+            return (
+                <div className="w-full max-w-lg mx-auto bg-eco-dark-card rounded-lg shadow-xl overflow-hidden">
+                    <div id="qr-reader" className="w-full"></div>
+                    <p className="text-center text-gray-400 p-4">Align barcode within the frame</p>
+                </div>
+            );
+        };
+        
+        /**
+         * Home Page Component
+         */
+        const HomePage = ({ onScanSuccess, onSearch }) => {
+            const [query, setQuery] = useState("");
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (query.trim()) {
+                    onSearch(query.trim());
+                }
+            };
+            
+            return (
+                <div className="container mx-auto px-4 py-8 flex flex-col items-center gap-12">
+                    {/* 1. Search Bar */}
+                    <form onSubmit={handleSubmit} className="w-full max-w-2xl relative">
+                        <input
+                            type="search"
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            placeholder="Search product by name..."
+                            className="w-full py-4 pl-12 pr-6 bg-eco-dark-card border border-gray-700 rounded-full text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-eco-green"
+                        />
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                            <SearchIcon className="w-6 h-6 text-gray-400" />
+                        </div>
+                    </form>
+
+                    {/* 2. Barcode Scanner */}
+                    <div className="w-full flex flex-col items-center gap-4">
+                        <h2 className="text-2xl font-semibold text-white">Scan Barcode</h2>
+                        <p className="text-gray-400 max-w-md text-center">
+                            Use your camera to scan a product's barcode and get its eco-score instantly.
+                        </p>
+                        <BarcodeScanner 
+                            onScanSuccess={onScanSuccess}
+                            onScanError={(err) => console.warn("Scan Error:", err)}
+                        />
+                    </div>
+                </div>
+            );
+        };
+        
+        /**
+         * Product Modal Component (for search/scan results)
+         */
+        const ProductModal = ({ barcode, onGoBack, auth, onProductRequest }) => {
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [productData, setProductData] = useState(null); // { product: {}, alternatives: [] }
+
+            useEffect(() => {
+                if (!barcode) return;
+                
+                setLoading(true);
+                setError(null);
+                setProductData(null);
+                
+                api(`/products/barcode/${barcode}`)
+                    .then(data => {
+                        setProductData(data);
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        if (err.message.includes("not found")) {
+                            setError("Product not found in our database.");
+                        } else {
+                            setError("Failed to fetch product data.");
+                        }
+                    })
+                    .finally(() => {
+                        setLoading(false);
+                    });
+                
+            }, [barcode]);
+            
+            // This component handles the 'Product Not Found' case
+            if (error === "Product not found in our database.") {
+                return (
+                    <Modal title="Product Not Found" onClose={onGoBack}>
+                        <div className="text-center">
+                            <p className="text-gray-300 mb-4">
+                                We couldn't find the barcode "{barcode}" in our database.
+                            </p>
+                            {auth ? (
+                                <button
+                                    onClick={() => onProductRequest(barcode)}
+                                    className="w-full bg-eco-green text-eco-dark font-bold py-3 px-4 rounded-lg transition-all hover:bg-eco-green-dark hover:text-white"
+                                >
+                                    Help Us by Requesting This Product
+                                </button>
+                            ) : (
+                                <p className="text-gray-400 p-3 bg-gray-700 rounded-lg">
+                                    Please <a href="#" onClick={(e) => { e.preventDefault(); /* todo: trigger login */ }} className="text-eco-green underline">login</a> to request this product and earn points!
+                                </p>
+                            )}
+                        </div>
+                    </Modal>
+                );
+            }
+            
+            if (loading) {
+                return (
+                    <Modal title="Loading Product..." onClose={onGoBack}>
+                        <div className="flex justify-center items-center h-40">
+                           <LeafIcon className="w-12 h-12 text-eco-green animate-spin" />
+                        </div>
+                    </Modal>
+                );
+            }
+            
+            if (error) {
+                return (
+                    <Modal title="Error" onClose={onGoBack}>
+                        <p className="text-red-400 text-center">{error}</p>
+                    </Modal>
+                );
+            }
+            
+            if (!productData || !productData.product) {
+                return null;
+            }
+            
+            const { product, alternatives } = productData;
+
+            return (
+                <Modal title="Product Details" onClose={onGoBack}>
+                    <div className="space-y-6">
+                        {/* Main Product */}
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <img
+                                src={product.image_url || 'https://placehold.co/400x400/2d3748/4ade80?text=No+Image'}
+                                alt={product.name}
+                                className="w-full sm:w-1/3 h-auto object-cover rounded-lg"
+                                onError={(e) => e.target.src = 'https://placehold.co/400x400/2d3748/4ade80?text=No+Image'}
+                            />
+                            <div className="flex-1">
+                                <h2 className="text-2xl font-bold text-white">{product.name}</h2>
+                                <p className="text-lg text-gray-400">{product.brand_name}</p>
+                                <p className="text-xl font-bold text-gray-200 mt-2">${product.price.toFixed(2)}</p>
+                                
+                                <div className="mt-4 p-4 bg-gray-700 rounded-lg">
+                                    <h4 className="text-lg font-semibold text-eco-green">Eco Score: {product.score} / 100</h4>
+                                    <p className="text-sm text-gray-300">
+                                        Based on packaging, manufacturing, and disposal.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Score Breakdown */}
+                        <div className="space-y-2">
+                             <h4 className="text-lg font-semibold text-gray-200">Score Details:</h4>
+                             <div className="flex justify-between text-gray-300">
+                                <span>Packaging Material:</span>
+                                <span className="font-medium text-white capitalize">{product.packaging_material.replace(/_/g, ' ')}</span>
+                             </div>
+                             <div className="flex justify-between text-gray-300">
+                                <span>Manufacturing Location:</span>
+                                <span className="font-medium text-white capitalize">{product.manufacturing_location}</span>
+                             </div>
+                             <div className="flex justify-between text-gray-300">
+                                <span>Disposal Method:</span>
+                                <span className="font-medium text-white capitalize">{product.disposal_method.replace(/_/g, ' ')}</span>
+                             </div>
+                        </div>
+
+                        {/* Alternatives */}
+                        {alternatives && alternatives.length > 0 && (
+                            <div className="space-y-3">
+                                <h3 className="text-xl font-semibold text-eco-green">Greener Alternatives</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {alternatives.map(alt => (
+                                        <ProductCard key={alt.id} product={alt} onClick={() => alert(`Clicked on ${alt.name}`)} />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </Modal>
+            );
+        };
+        
+        /**
+         * Search Results Modal
+         */
+        const SearchResultsModal = ({ query, onGoBack, onProductSelect }) => {
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [results, setResults] = useState([]);
+
+            useEffect(() => {
+                if (!query) return;
+
+                setLoading(true);
+                setError(null);
+                setResults([]);
+
+                api(`/products/search?q=${encodeURIComponent(query)}`)
+                    .then(data => {
+                        setResults(data || []); // Ensure data is an array
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        setError("Search failed. Please try again.");
+                    })
+                    .finally(() => {
+                        setLoading(false);
+                    });
+
+            }, [query]);
+
+            return (
+                <Modal title={`Search Results for "${query}"`} onClose={onGoBack}>
+                    <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+                        {loading && (
+                            <div className="flex justify-center items-center h-40">
+                                <LeafIcon className="w-12 h-12 text-eco-green animate-spin" />
+                            </div>
+                        )}
+                        {error && <p className="text-red-400 text-center">{error}</p>}
+                        {!loading && !error && results.length === 0 && (
+                            <p className="text-gray-400 text-center">No products found matching your search.</p>
+                        )}
+                        {!loading && !error && results.length > 0 && (
+                            <div className="grid grid-cols-1 gap-4">
+                                {results.map(product => (
+                                    <div 
+                                        key={product.id}
+                                        className="flex items-center gap-4 bg-eco-dark-card p-3 rounded-lg cursor-pointer hover:bg-gray-700"
+                                        onClick={() => onProductSelect(product.barcode)}
+                                    >
+                                        <img 
+                                            src={product.image_url || 'https://placehold.co/100x100/2d3748/4ade80?text=...'}
+                                            alt={product.name}
+                                            className="w-16 h-16 object-cover rounded-md flex-shrink-0"
+                                            onError={(e) => e.target.src = 'https://placehold.co/100x100/2d3748/4ade80?text=...'}
+                                        />
+                                        <div className="flex-1 overflow-hidden">
+                                            <h4 className="text-base font-semibold text-white truncate">{product.name}</h4>
+                                            <p className="text-sm text-gray-400 truncate">{product.brand_name}</p>
+                                        </div>
+                                        <span className="text-base font-bold text-eco-green">Score: {product.score}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </Modal>
+            );
+        };
+        
+        /**
+         * Product Request Modal
+         */
+        const ProductRequestModal = ({ barcode, auth, onGoBack, onNotify }) => {
+            const [formData, setFormData] = useState({
+                barcode: barcode || '',
+                name: '',
+                brandname: '', // Matches backend 'brandname'
+                productImage: null,
+            });
+            const [loading, setLoading] = useState(false);
+            
+            const handleChange = (e) => {
+                const { name, value, files } = e.target;
+                setFormData(prev => ({
+                    ...prev,
+                    [name]: files ? files[0] : value
+                }));
+            };
+            
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!formData.name || !formData.barcode || !formData.productImage) {
+                    onNotify("Please fill in all fields and upload an image.", "error");
+                    return;
+                }
+                
+                setLoading(true);
+                
+                // We need to use FormData for file uploads
+                const data = new FormData();
+                data.append('barcode', formData.barcode);
+                data.append('name', formData.name);
+                data.append('brandname', formData.brandname);
+                data.append('productImage', formData.productImage);
+
+                try {
+                    // We can't use the JSON 'api' helper for FormData
+                    const response = await fetch(`${API_BASE_URL}/products/request`, {
+                        method: 'POST',
+                        headers: {
+                            // Don't set Content-Type, browser does it for FormData
+                            'Authorization': `Bearer ${auth.token}`,
+                        },
+                        body: data,
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({ message: "An unknown error occurred" }));
+                        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    onNotify("Product requested successfully! You earned 10 points.", "success");
+                    onGoBack(); // Close the modal
+                    // TODO: Could also update auth state with new points
+                    
+                } catch (error) {
+                    console.error("Product Request Error:", error);
+                    onNotify(error.message, "error");
+                } finally {
+                    setLoading(false);
+                }
+            };
+            
+            return (
+                <Modal title="Request New Product" onClose={onGoBack}>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label htmlFor="barcode" className="block text-sm font-medium text-gray-300">Barcode</label>
+                            <input
+                                type="text"
+                                name="barcode"
+                                id="barcode"
+                                value={formData.barcode}
+                                onChange={handleChange}
+                                required
+                                className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-eco-green focus:border-eco-green"
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="name" className="block text-sm font-medium text-gray-300">Product Name</label>
+                            <input
+                                type="text"
+                                name="name"
+                                id="name"
+                                value={formData.name}
+                                onChange={handleChange}
+                                required
+                                className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-eco-green focus:border-eco-green"
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="brandname" className="block text-sm font-medium text-gray-300">Brand Name (Optional)</label>
+                            <input
+                                type="text"
+                                name="brandname"
+                                id="brandname"
+                                value={formData.brandname}
+                                onChange={handleChange}
+                                className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-eco-green focus:border-eco-green"
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="productImage" className="block text-sm font-medium text-gray-300">Product Image</label>
+                            <input
+                                type="file"
+                                name="productImage"
+                                id="productImage"
+                                accept="image/*"
+                                onChange={handleChange}
+                                required
+                                className="mt-1 block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-eco-green file:text-eco-dark hover:file:bg-eco-green-dark hover:file:text-white"
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-eco-dark bg-eco-green hover:bg-eco-green-dark hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        >
+                            {loading ? <LeafIcon className="w-5 h-5 animate-spin" /> : 'Submit Request'}
+                        </button>
+                    </form>
+                </Modal>
+            );
+        };
+        
+        /**
+         * Auth Form Component (Login/Register)
+         */
+        const AuthForm = ({ mode, onAuthSuccess, onNotify }) => {
+            const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+            const [loading, setLoading] = useState(false);
+            const isLogin = mode === 'login';
+            
+            const handleChange = (e) => {
+                const { name, value } = e.target;
+                setFormData(prev => ({ ...prev, [name]: value }));
+            };
+            
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                onNotify(null); // Clear previous errors
+
+                const endpoint = isLogin ? '/auth/login' : '/auth/register';
+                const body = isLogin 
+                    ? JSON.stringify({ email: formData.email, password: formData.password })
+                    : JSON.stringify({ name: formData.name, email: formData.email, password: formData.password });
+                
+                try {
+                    const data = await api(endpoint, { method: 'POST', body });
+                    onAuthSuccess(data); // data is LoginResponse or repo.User
+                } catch (error) {
+                    onNotify(error.message, 'error');
+                } finally {
+                    setLoading(false);
+                }
+            };
+            
+            return (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    {!isLogin && (
+                        <div>
+                            <label htmlFor="name" className="block text-sm font-medium text-gray-300">Name</label>
+                            <input
+                                type="text"
+                                name="name"
+                                id="name"
+                                value={formData.name}
+                                onChange={handleChange}
+                                required
+                                className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-eco-green focus:border-eco-green"
+                            />
+                        </div>
+                    )}
+                    <div>
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-300">Email address</label>
+                        <input
+                            type="email"
+                            name="email"
+                            id="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            required
+                            autoComplete="email"
+                            className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-eco-green focus:border-eco-green"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="password" className="block text-sm font-medium text-gray-300">Password</label>
+                        <input
+                            type="password"
+                            name="password"
+                            id="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            required
+                            autoComplete={isLogin ? "current-password" : "new-password"}
+                            className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-eco-green focus:border-eco-green"
+                        />
+                        {!isLogin && <p className="mt-1 text-xs text-gray-400">Must be at least 8 characters long.</p>}
+                    </div>
+                    
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-eco-dark bg-eco-green hover:bg-eco-green-dark hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    >
+                        {loading ? (
+                            <LeafIcon className="w-5 h-5 animate-spin" />
+                        ) : (
+                            isLogin ? 'Sign In' : 'Create Account'
+                        )}
+                    </button>
+                </form>
+            );
+        };
+
+        /**
+         * Dashboard Page Component
+         */
+        const DashboardPage = ({ auth }) => {
+            if (!auth) return null; // Should be protected by router
+            
+            const { user } = auth;
+            
+            return (
+                <div className="container mx-auto px-4 py-8">
+                    <h1 className="text-4xl font-bold text-white mb-2">
+                        Welcome back, <span className="text-eco-green">{user.name}</span>!
+                    </h1>
+                    <p className="text-lg text-gray-400 mb-8">Here's your eco-dashboard.</p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Profile Info */}
+                        <div className="bg-eco-dark-card p-6 rounded-lg shadow-lg">
+                            <h2 className="text-2xl font-semibold text-eco-green mb-4">Profile Info</h2>
+                            <div className="space-y-3">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-400">Name:</span>
+                                    <span className="text-white font-medium">{user.name}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-400">Email:</span>
+                                    <span className="text-white font-medium">{user.email}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-400">Member Since:</span>
+                                    <span className="text-white font-medium">{new Date(user.created_at).toLocaleDateString()}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Score/Points */}
+                        <div className="bg-eco-dark-card p-6 rounded-lg shadow-lg flex flex-col items-center justify-center text-center">
+                            <h2 className="text-2xl font-semibold text-eco-green mb-2">Your Eco-Points</h2>
+                            <p className="text-6xl font-bold text-white">{user.points}</p>
+                            <p className="text-gray-400 mt-2">
+                                Keep scanning and requesting products to earn more!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        
+        /**
+         * About Us Page Component
+         */
+        const AboutPage = () => (
+            <div className="container mx-auto px-4 py-8">
+                <div className="max-w-3xl mx-auto bg-eco-dark-card p-8 rounded-lg shadow-lg">
+                    <h1 className="text-4xl font-bold text-center text-eco-green mb-6">About ecoScanAi</h1>
+                    <p className="text-lg text-gray-300 mb-6 leading-relaxed">
+                        ecoScanAi was born from a shared passion for sustainability and technology. Our mission is to empower consumers to make environmentally conscious decisions with a simple scan of a barcode. We believe that by providing transparent, easy-to-understand data on product sustainability, we can collectively drive change and promote a greener future.
+                    </p>
+                    
+                    <h2 className="text-3xl font-semibold text-white text-center mb-8">Meet the Team</h2>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-gray-700 p-5 rounded-lg text-center">
+                            <h3 className="text-xl font-bold text-white">Razibul Hasan Badhon</h3>
+                            <p className="text-eco-green font-medium">Backend & Project Management</p>
+                        </div>
+                        <div className="bg-gray-700 p-5 rounded-lg text-center">
+                            <h3 className="text-xl font-bold text-white">Abdullah Alif</h3>
+                            <p className="text-eco-green font-medium">Backend Developer</p>
+                        </div>
+                        <div className="bg-gray-700 p-5 rounded-lg text-center">
+                            <h3 className="text-xl font-bold text-white">Rifat Hassan</h3>
+                            <p className="text-eco-green font-medium">Frontend Developer</p>
+                        </div>
+                        <div className="bg-gray-700 p-5 rounded-lg text-center">
+                            <h3 className="text-xl font-bold text-white">Lubna Jahan Lipa</h3>
+                            <p className="text-eco-green font-medium">Database Management</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+        
+        /**
+         * Scoring Algorithm Page Component
+         */
+        const ScoringPage = () => {
+            const scoreDetails = [
+                {
+                    title: "Packaging (35% Weight)",
+                    categories: [
+                        { name: "None, Compostable Paper", score: 100 },
+                        { name: "Glass, Paper, Cardboard", score: 80 },
+                        { name: "Aluminum, Recyclable Plastic", score: 60 },
+                        { name: "Unknown / Other", score: 40 },
+                        { name: "Plastic, Mixed Materials", score: 20 },
+                    ]
+                },
+                {
+                    title: "Transportation (30% Weight)",
+                    categories: [
+                        { name: "Local, Regional", score: 95 },
+                        { name: "National", score: 70 },
+                        { name: "Unknown / Other", score: 50 },
+                        { name: "International", score: 30 },
+                    ]
+                },
+                {
+                    title: "Disposal (35% Weight)",
+                    categories: [
+                        { name: "Compostable, Reusable", score: 100 },
+                        { name: "Recyclable", score: 85 },
+                        { name: "Minimal Impact", score: 70 },
+                        { name: "Unknown / Other", score: 40 },
+                        { name: "Landfill", score: 10 },
+                    ]
+                }
+            ];
+            
+            return (
+                <div className="container mx-auto px-4 py-8">
+                    <div className="max-w-3xl mx-auto bg-eco-dark-card p-8 rounded-lg shadow-lg">
+                        <h1 className="text-4xl font-bold text-center text-eco-green mb-6">Our Scoring Algorithm</h1>
+                        <p className="text-lg text-gray-300 mb-6 leading-relaxed">
+                            To ensure transparency and help you understand our product ratings, we've outlined our scoring algorithm below. The final "Eco-Score" (out of 100) is a weighted average of three key factors: Packaging, Transportation, and Disposal.
+                        </p>
+                        
+                        <div className="text-center bg-gray-700 p-4 rounded-lg mb-8">
+                            <p className="text-xl font-bold text-white">
+                                Final Score = (Packaging * 0.35) + (Transportation * 0.30) + (Disposal * 0.35)
+                            </p>
+                        </div>
+                        
+                        <div className="space-y-8">
+                            {scoreDetails.map((section, idx) => (
+                                <div key={idx}>
+                                    <h2 className="text-2xl font-semibold text-white mb-3">{section.title}</h2>
+                                    <ul className="divide-y divide-gray-700">
+                                        {section.categories.map((cat, catIdx) => (
+                                            <li key={catIdx} className="flex justify-between items-center py-3">
+                                                <span className="text-gray-300">{cat.name}</span>
+                                                <span className="font-bold text-lg text-eco-green">{cat.score} pts</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))}
+                        </div>
+                        
+                        <p className="text-sm text-gray-400 mt-8 text-center">
+                            Disclaimer: This scoring model is based on our internal logic and publicly available data. It is intended for informational purposes to guide consumers and may not capture every nuance of a product's lifecycle.
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+        
+        /**
+         * Footer Component
+         */
+        const Footer = () => (
+            <footer className="bg-eco-dark border-t border-gray-700 mt-16">
+                <div className="container mx-auto px-4 py-6 text-center text-gray-400">
+                    <p>&copy; {new Date().getFullYear()} ecoScanAi. All rights reserved.</p>
+                </div>
+            </footer>
+        );
+
+        // --- Main App Component ---
+
+        function App() {
+            // --- State ---
+            const [page, setPage] = useState('home'); // 'home', 'about', 'scoring', 'dashboard'
+            const [modal, setModal] = useState(null); // 'login', 'register', 'product', 'search', 'request'
+            const [modalData, setModalData] = useState(null); // Stores barcode, query, etc. for the modal
+            const [auth, setAuth] = useState(null); // { token: '...', user: {...} }
+            const [notification, setNotification] = useState({ message: null, type: 'error' });
+            
+            // --- Auth Effect ---
+            // Load auth data from localStorage on initial render
+            useEffect(() => {
+                const storedAuth = localStorage.getItem('ecoScanAuth');
+                if (storedAuth) {
+                    setAuth(JSON.parse(storedAuth));
+                }
+            }, []);
+
+            // --- Handlers ---
+            
+            const handleNotify = (message, type = 'error') => {
+                setNotification({ message, type });
+            };
+            
+            const handleAuthSuccess = (data) => {
+                let authData;
+                if (data.access_token) { // Login response
+                    authData = { token: data.access_token, user: data.user };
+                    handleNotify("Login successful!", "success");
+                } else { // Register response (returns user only)
+                    // We need to auto-login the user after register, but the API doesn't return a token
+                    // For now, just notify and ask them to log in.
+                    // A better backend would return a token on register or I'd have to make a login call.
+                    // For this demo, I'll just show a success message.
+                    handleNotify("Registration successful! Please log in.", "success");
+                    setModal('login');
+                    return;
+                }
+                
+                setAuth(authData);
+                localStorage.setItem('ecoScanAuth', JSON.stringify(authData));
+                setModal(null); // Close auth modal
+                setPage('dashboard'); // Redirect to dashboard
+            };
+            
+            const handleLogout = () => {
+                setAuth(null);
+                localStorage.removeItem('ecoScanAuth');
+                setPage('home');
+                handleNotify("Logged out successfully.", "success");
+            };
+            
+            const handleNavClick = (targetPage) => {
+                // Handle auth modal triggers
+                if (targetPage === 'login' || targetPage === 'register') {
+                    setModal(targetPage);
+                    setModalData(null);
+                } else {
+                    // Handle page navigation
+                    setPage(targetPage);
+                    setModal(null); // Close any open modals
+                    setModalData(null);
+                }
+            };
+            
+            const handleScanSuccess = (barcode) => {
+                console.log("Scanned Barcode:", barcode);
+                setModal('product');
+                setModalData({ barcode });
+            };
+            
+            const handleSearch = (query) => {
+                console.log("Search Query:", query);
+                setModal('search');
+                setModalData({ query });
+            };
+            
+            const handleProductSelect = (barcode) => {
+                // From search results, open product modal
+                setModal('product');
+                setModalData({ barcode });
+            };
+            
+            const handleProductRequest = (barcode) => {
+                setModal('request');
+                setModalData({ barcode });
+            };
+            
+            const closeModal = () => {
+                setModal(null);
+                setModalData(null);
+                // After closing scanner-related modals, we need to re-render homepage
+                // to re-initialize the scanner. A bit of a hack.
+                if (page === 'home' && (modal === 'product' || modal === 'search' || modal === 'request')) {
+                    setPage(''); // Force re-mount
+                    setTimeout(() => setPage('home'), 0);
+                }
+            };
+
+            // --- Render Logic ---
+            
+            const renderPage = () => {
+                switch(page) {
+                    case 'home':
+                        return <HomePage onScanSuccess={handleScanSuccess} onSearch={handleSearch} />;
+                    case 'about':
+                        return <AboutPage />;
+                    case 'scoring':
+                        return <ScoringPage />;
+                    case 'dashboard':
+                        return auth ? <DashboardPage auth={auth} /> : <HomePage onScanSuccess={handleScanSuccess} onSearch={handleSearch} />;
+                    default:
+                        return <HomePage onScanSuccess={handleScanSuccess} onSearch={handleSearch} />;
+                }
+            };
+            
+            const renderModal = () => {
+                switch(modal) {
+                    case 'login':
+                        return (
+                            <Modal title="Login to ecoScanAi" onClose={closeModal}>
+                                <AuthForm 
+                                    mode="login" 
+                                    onAuthSuccess={handleAuthSuccess}
+                                    onNotify={handleNotify} 
+                                />
+                                <p className="text-center text-sm text-gray-400 mt-4">
+                                    Don't have an account?{' '}
+                                    <button 
+                                        onClick={() => setModal('register')} 
+                                        className="font-medium text-eco-green hover:underline"
+                                    >
+                                        Sign up
+                                    </button>
+                                </p>
+                            </Modal>
+                        );
+                    case 'register':
+                         return (
+                            <Modal title="Create Your Account" onClose={closeModal}>
+                                <AuthForm 
+                                    mode="register" 
+                                    onAuthSuccess={handleAuthSuccess}
+                                    onNotify={handleNotify} 
+                                />
+                                <p className="text-center text-sm text-gray-400 mt-4">
+                                    Already have an account?{' '}
+                                    <button 
+                                        onClick={() => setModal('login')} 
+                                        className="font-medium text-eco-green hover:underline"
+                                    >
+                                        Sign in
+                                    </button>
+                                </p>
+                            </Modal>
+                        );
+                    case 'product':
+                        return (
+                            <ProductModal 
+                                barcode={modalData?.barcode}
+                                onGoBack={closeModal}
+                                auth={auth}
+                                onProductRequest={handleProductRequest}
+                            />
+                        );
+                    case 'search':
+                        return (
+                            <SearchResultsModal 
+                                query={modalData?.query}
+                                onGoBack={closeModal}
+                                onProductSelect={handleProductSelect}
+                            />
+                        );
+                    case 'request':
+                        return (
+                            <ProductRequestModal
+                                barcode={modalData?.barcode}
+                                auth={auth}
+                                onGoBack={closeModal}
+                                onNotify={handleNotify}
+                            />
+                        );
+                    default:
+                        return null;
+                }
+            };
+            
+            return (
+                <div className="min-h-screen flex flex-col">
+                    <Notification 
+                        message={notification.message}
+                        type={notification.type}
+                        onDismiss={() => setNotification({ message: null, type: 'error' })}
+                    />
+                    <Header 
+                        auth={auth}
+                        onNavClick={handleNavClick}
+                        onLogout={handleLogout}
+                    />
+                    <main className="flex-grow">
+                        {renderPage()}
+                        {renderModal()}
+                    </main>
+                    <Footer />
+                </div>
+            );
         }
-        function attachPageListeners(pageId) {
-             console.log("[Router] Attaching listeners for page:", pageId);
-             if (pageId === 'home') {
-                 attachListener('search-form', 'submit', handleSearch);
-             } else if (pageId === 'login') {
-                 attachListener('login-form', 'submit', (e) => handleAuthForm(e, 'login'));
-             } else if (pageId === 'register') {
-                 attachListener('register-form', 'submit', (e) => handleAuthForm(e, 'register'));
-             } else if (pageId === 'dashboard') {
-                 attachListener('request-product-form', 'submit', handleRequestProduct);
-             }
-        }
 
-        // --- Document Ready ---
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log("DOM Content Loaded. Initializing...");
-            try {
-                // Inject page templates first
-                const pageHome = getElement('page-home');
-                const pageLogin = getElement('page-login');
-                const pageRegister = getElement('page-register');
-                const pageDashboard = getElement('page-dashboard');
-
-                if(pageHome) pageHome.innerHTML = homeTemplate; else console.error("page-home container not found");
-                if(pageLogin) pageLogin.innerHTML = authFormTemplate('login'); else console.error("page-login container not found");
-                if(pageRegister) pageRegister.innerHTML = authFormTemplate('register'); else console.error("page-register container not found");
-                if(pageDashboard) pageDashboard.innerHTML = dashboardTemplate; else console.error("page-dashboard container not found");
-
-                console.log("Templates injected.");
-            } catch(e) { console.error("Error injecting templates:", e); return; }
-
-            const mobileMenuButton = getElement('mobile-menu-button');
-            if (mobileMenuButton) {
-                mobileMenuButton.addEventListener('click', () => {
-                    const mobileMenuEl = getElement('mobile-menu');
-                    if(mobileMenuEl) mobileMenuEl.classList.toggle('hidden');
-                });
-            } else { console.warn("Mobile menu button not found."); }
-
-            window.addEventListener('hashchange', handleRouteChange);
-
-            checkLoginState();
-            handleRouteChange(); // Show initial page based on hash or default
-            console.log("Initialization complete. Current hash:", window.location.hash);
-        });
+        // --- Mount the App ---
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(
+            <StrictMode>
+                <App />
+            </StrictMode>
+        );
 
     </script>
 </body>
 </html>
-
