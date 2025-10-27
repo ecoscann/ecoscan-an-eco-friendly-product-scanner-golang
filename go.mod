@@ -3,6 +3,7 @@ module ecoscan.com
 go 1.25.0
 
 require (
+	github.com/agnivade/levenshtein v1.2.1 // indirect
 	github.com/cloudinary/cloudinary-go/v2 v2.13.0 // indirect
 	github.com/creasty/defaults v1.7.0 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
