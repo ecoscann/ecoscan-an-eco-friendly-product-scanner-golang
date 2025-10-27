@@ -5,12 +5,12 @@ import (
 	"encoding/base64"
 	"time"
 
+	"ecoscan.com/config"
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtSecretKey = []byte("my_secret_key") // env
-
 func GenerateAccessToken(userID int64) (string, error) {
+	cnf := config.GetConfig()
 	claims := jwt.MapClaims{ //this is payload
 		"user_id": userID,
 		"exp":     time.Now().Add(time.Minute * 15).Unix(), //exp in 15 min
@@ -19,7 +19,7 @@ func GenerateAccessToken(userID int64) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims) // it returns header+payload
 
-	return token.SignedString(jwtSecretKey) //signed is adding the signature last
+	return token.SignedString([]byte(cnf.JWTSecretKey)) //signed is adding the signature last
 }
 
 func GenerateRefreshToken() (string, error) {
