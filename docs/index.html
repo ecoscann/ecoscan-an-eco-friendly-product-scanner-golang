@@ -4,1197 +4,1120 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ecoScanAi</title>
-    <!-- 1. Tailwind CSS -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 2. React & ReactDOM -->
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <!-- 3. Babel (for JSX) -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- 4. html5-qrcode (for barcode scanning) -->
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Barcode Scanner Library -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     
+    <!-- Custom Styles and Tailwind Configuration -->
     <style>
-        /* Custom scrollbar for a cleaner look */
-        ::-webkit-scrollbar {
-            width: 6px;
+        /* Inter Font */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7fafc; /* Light gray background */
         }
-        ::-webkit-scrollbar-track {
-            background: #2d3748; /* gray-800 */
+
+        /* Custom Theme Colors */
+        .bg-leaf-green { background-color: #4CAF50; }
+        .text-leaf-green { color: #4CAF50; }
+        .border-leaf-green { border-color: #4CAF50; }
+        .hover\:bg-leaf-green-dark:hover { background-color: #45a049; }
+        .bg-dark-mode { background-color: #1a202c; }
+        .text-dark-mode { color: #1a202c; }
+
+        /* Custom Leaf SVG Background Pattern */
+        .leaf-pattern {
+            background-color: #ffffff;
+            background-image: 
+                radial-gradient(#4CAF50 1px, transparent 1px),
+                radial-gradient(#4CAF50 1px, #ffffff 1px);
+            background-size: 40px 40px;
+            background-position: 0 0, 20px 20px;
+            opacity: 0.05;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: -1;
         }
-        ::-webkit-scrollbar-thumb {
-            background: #4ade80; /* green-400 */
-            border-radius: 3px;
+
+        /* Scanner Box Styling */
+        #reader {
+            width: 100%;
+            max-width: 500px;
+            border: 4px dashed #4CAF50;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #22c55e; /* green-500 */
+
+        #reader__dashboard_section_csr button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        /* Modal Styling */
+        .modal {
+            transition: opacity 0.25s ease;
+        }
+        .modal-content {
+            transition: transform 0.25s ease;
+        }
+
+        /* Form Input Styling */
+        .form-input {
+            @apply w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-leaf-green focus:border-transparent transition duration-200;
+        }
+        
+        /* Button Styling */
+        .btn {
+            @apply px-6 py-3 rounded-lg font-bold text-white shadow-md transition duration-200 transform hover:scale-105;
+        }
+        .btn-green {
+            @apply bg-leaf-green hover:bg-leaf-green-dark;
+        }
+        .btn-dark {
+            @apply bg-dark-mode hover:bg-gray-800;
+        }
+        .btn-light {
+            @apply bg-white text-dark-mode border border-gray-300 hover:bg-gray-100;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border-top-color: #4CAF50;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Hide scrollbar for product modal alternatives */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
     </style>
-    <script>
-        // Custom Tailwind theme configuration
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        'eco-dark': '#1a202c', // gray-900
-                        'eco-dark-card': '#2d3748', // gray-800
-                        'eco-green': '#4ade80', // green-400
-                        'eco-green-dark': '#22c55e', // green-500
-                    }
-                },
-            },
-        };
-    </script>
 </head>
-<body class="bg-eco-dark text-white font-sans antialiased">
-    <div id="root"></div>
 
-    <!-- This is where all the React code lives -->
-    <script type="text/babel">
+<body class="bg-gray-50 text-dark-mode">
 
-        const { useState, useEffect, useCallback, StrictMode } = React;
+    <!-- Global Loading Spinner -->
+    <div id="loading-spinner" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[999]">
+        <div class="spinner w-16 h-16 border-4 border-gray-200 border-t-leaf-green rounded-full"></div>
+    </div>
 
-        // --- Configuration ---
-        // !!! IMPORTANT: Replace this with your live backend URL
-        const API_BASE_URL = "https://ecoscan-an-eco-friendly-product-scanner.onrender.com/api/v1";
+    <!-- Global Message Modal -->
+    <div id="message-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[998]">
+        <div class="modal-content bg-white p-6 rounded-lg shadow-xl w-11/12 max-w-md text-center">
+            <p id="message-text" class="text-lg mb-4"></p>
+            <button id="message-close-btn" class="btn btn-green">Close</button>
+        </div>
+    </div>
 
-        // --- API Helper Functions ---
+    <!-- Product Details Modal -->
+    <div id="product-modal" class="modal hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[997] p-4">
+        <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto no-scrollbar transform scale-95">
+            <div class="p-6 relative">
+                <button id="product-modal-close" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900">
+                    <i class="fas fa-times fa-lg"></i>
+                </button>
+                
+                <!-- Product Main Info -->
+                <div id="product-modal-content" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Left Column: Image & Basic Info -->
+                    <div>
+                        <img id="product-img" src="https://placehold.co/400x400/eeeeee/cccccc?text=Product" alt="Product Image" class="w-full h-64 object-cover rounded-lg mb-4">
+                        <h2 id="product-name" class="text-2xl font-bold mb-1">Product Name</h2>
+                        <p id="product-brand" class="text-lg text-gray-600 mb-4">Brand Name</p>
+                        <p class="text-sm text-gray-500">Barcode: <span id="product-barcode"></span></p>
+                    </div>
+
+                    <!-- Right Column: Score & Details -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-2">Eco Score</h3>
+                        <div class="flex items-center gap-4 mb-4">
+                            <div id="product-score" class="text-6xl font-bold text-leaf-green">85</div>
+                            <div id="product-score-rating" class="text-xl font-semibold">Good</div>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <h4 class="font-semibold text-md">Score Breakdown:</h4>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-700"><i class="fas fa-box-open mr-2 text-leaf-green"></i>Packaging</span>
+                                <span id="product-packaging" class="font-bold"></span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-700"><i class="fas fa-truck mr-2 text-leaf-green"></i>Transport</span>
+                                <span id="product-transport" class="font-bold"></span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-700"><i class="fas fa-recycle mr-2 text-leaf-green"></i>Disposal</span>
+                                <span id="product-disposal" class="font-bold"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alternatives Section -->
+                <div id="product-alternatives-container" class="mt-8 pt-6 border-t border-gray-200">
+                    <h3 class="text-xl font-semibold mb-4">Better Alternatives</h3>
+                    <div id="product-alternatives-list" class="flex overflow-x-auto gap-4 pb-4 no-scrollbar">
+                        <!-- Alternative items will be injected here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Header / Navigation -->
+    <header id="app-header" class="bg-white shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <!-- Logo -->
+            <a href="#" class="nav-link text-2xl font-extrabold text-dark-mode flex items-center" data-page="home">
+                <i class="fas fa-leaf mr-2 text-leaf-green"></i>
+                ecoScan<span class="text-leaf-green">Ai</span>
+            </a>
+            
+            <!-- Mobile Menu Button -->
+            <button id="mobile-menu-btn" class="md:hidden text-2xl">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <!-- Desktop Nav Links -->
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="#" class="nav-link text-gray-700 hover:text-leaf-green font-medium" data-page="home">Home</a>
+                <a href="#" class="nav-link text-gray-700 hover:text-leaf-green font-medium" data-page="scoring">Scoring</a>
+                <a href="#" class="nav-link text-gray-700 hover:text-leaf-green font-medium" data-page="about">About Us</a>
+
+                <!-- Auth Links (Logged Out) -->
+                <div id="auth-links" class="flex items-center space-x-3">
+                    <a href="#" class="nav-link px-4 py-2 rounded-lg text-dark-mode font-medium hover:bg-gray-100" data-page="login">Login</a>
+                    <a href="#" class="nav-link btn btn-green" data-page="register">Create Account</a>
+                </div>
+
+                <!-- User Links (Logged In) -->
+                <div id="user-links" class="hidden flex items-center space-x-4">
+                    <a href="#" class="nav-link text-gray-700 hover:text-leaf-green font-medium" data-page="request-product">Request Product</a>
+                    <a href="#" class="nav-link px-4 py-2 rounded-lg font-medium bg-leaf-green text-white hover:bg-leaf-green-dark" data-page="dashboard">Dashboard</a>
+                    <a href="#" id="logout-btn" class="nav-link text-gray-700 hover:text-leaf-green font-medium" data-page="home">Logout</a>
+                </div>
+            </div>
+        </nav>
         
-        /**
-         * A wrapper for fetch to handle API calls, auth, and errors
-         * @param {string} endpoint - The API endpoint (e.g., "/auth/login")
-         * @param {object} options - Fetch options (method, headers, body)
-         * @param {string|null} token - Optional auth token
-         */
-        const api = async (endpoint, options = {}, token = null) => {
-            const headers = {
-                'Content-Type': 'application/json',
-                ...options.headers,
+        <!-- Mobile Menu (Dropdown) -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white shadow-lg pb-4">
+            <a href="#" class="nav-link block px-5 py-3 text-gray-700 hover:bg-gray-100" data-page="home">Home</a>
+            <a href="#" class="nav-link block px-5 py-3 text-gray-700 hover:bg-gray-100" data-page="scoring">Scoring</a>
+            <a href="#" class="nav-link block px-5 py-3 text-gray-700 hover:bg-gray-100" data-page="about">About Us</a>
+
+            <!-- Mobile Auth Links -->
+            <div id="mobile-auth-links" class="px-5 pt-3 border-t border-gray-200 space-y-3">
+                <a href="#" class="nav-link block w-full text-center px-4 py-2 rounded-lg text-dark-mode font-medium bg-gray-100 hover:bg-gray-200" data-page="login">Login</a>
+                <a href="#" class="nav-link block w-full text-center btn btn-green" data-page="register">Create Account</a>
+            </div>
+            
+            <!-- Mobile User Links -->
+            <div id="mobile-user-links" class="hidden px-5 pt-3 border-t border-gray-200 space-y-3">
+                <a href="#" class="nav-link block w-full text-center px-4 py-2 rounded-lg font-medium bg-leaf-green text-white hover:bg-leaf-green-dark" data-page="dashboard">Dashboard</a>
+                <a href="#" class="nav-link block w-full text-center text-gray-700 font-medium hover:bg-gray-100" data-page="request-product">Request Product</a>
+                <a href="#" id="mobile-logout-btn" class="nav-link block w-full text-center text-gray-700 font-medium hover:bg-gray-100" data-page="home">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <div id="app-container" class="container mx-auto p-4 md:p-8">
+
+        <!-- ===== PAGE: HOME ===== -->
+        <main id="page-home" class="page-content">
+            <div class="max-w-3xl mx-auto text-center">
+                <!-- Search Box -->
+                <div class="relative mb-8 w-full">
+                    <input type="search" id="search-input" placeholder="Search product by name..." class="form-input !py-4 !pl-12 !pr-4 !rounded-full !shadow-lg">
+                    <i class="fas fa-search text-gray-400 absolute top-1/2 left-5 transform -translate-y-1/2"></i>
+                </div>
+                <!-- Search Results -->
+                <div id="search-results-container" class="hidden w-full max-w-3xl mx-auto bg-white rounded-lg shadow-lg -mt-6 mb-8 text-left">
+                    <ul id="search-results-list" class="divide-y divide-gray-200 max-h-80 overflow-y-auto">
+                        <!-- Search results injected here -->
+                    </ul>
+                </div>
+
+                <!-- Barcode Scanner -->
+                <h1 class="text-3xl md:text-4xl font-bold mb-4 text-dark-mode">Scan a Product Barcode</h1>
+                <p class="text-lg text-gray-600 mb-8">
+                    Use your camera to scan a product's barcode and instantly get its eco-score.
+                </p>
+
+                <div id="scanner-container" class="w-full max-w-md mx-auto bg-white p-6 rounded-2xl shadow-xl relative overflow-hidden">
+                    <div class="leaf-pattern"></div>
+                    <div id="reader" class="mx-auto bg-gray-200"></div>
+                    <div id="scanner-status" class="mt-4 text-gray-600">Initializing scanner...</div>
+                    <button id="start-scanner-btn" class="hidden btn btn-green mt-4 w-full">
+                        <i class="fas fa-camera mr-2"></i> Start Scanner
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- ===== PAGE: LOGIN ===== -->
+        <main id="page-login" class="page-content hidden">
+            <div class="max-w-md mx-auto bg-white p-8 md:p-10 rounded-2xl shadow-2xl relative overflow-hidden">
+                <div class="leaf-pattern"></div>
+                <h2 class="text-3xl font-bold text-center mb-6 text-dark-mode">Welcome Back</h2>
+                <form id="login-form" class="space-y-6">
+                    <div>
+                        <label for="login-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="login-email" class="form-input" placeholder="you@example.com" required>
+                    </div>
+                    <div>
+                        <label for="login-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input type="password" id="login-password" class="form-input" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn btn-green w-full !py-3 !text-lg">Login</button>
+                </form>
+                <p class="text-center mt-6 text-gray-600">
+                    Don't have an account? <a href="#" class="nav-link font-medium text-leaf-green hover:underline" data-page="register">Sign up</a>
+                </p>
+            </div>
+        </main>
+
+        <!-- ===== PAGE: REGISTER ===== -->
+        <main id="page-register" class="page-content hidden">
+            <div class="max-w-md mx-auto bg-white p-8 md:p-10 rounded-2xl shadow-2xl relative overflow-hidden">
+                <div class="leaf-pattern"></div>
+                <h2 class="text-3xl font-bold text-center mb-6 text-dark-mode">Create Your Account</h2>
+                <form id="register-form" class="space-y-6">
+                    <div>
+                        <label for="register-name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                        <input type="text" id="register-name" class="form-input" placeholder="Your Name" required>
+                    </div>
+                    <div>
+                        <label for="register-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="register-email" class="form-input" placeholder="you@example.com" required>
+                    </div>
+                    <div>
+                        <label for="register-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input type="password" id="register-password" class="form-input" placeholder="Minimum 8 characters" required minlength="8">
+                    </div>
+                    <button type="submit" class="btn btn-green w-full !py-3 !text-lg">Create Account</button>
+                </form>
+                <p class="text-center mt-6 text-gray-600">
+                    Already have an account? <a href="#" class="nav-link font-medium text-leaf-green hover:underline" data-page="login">Log in</a>
+                </p>
+            </div>
+        </main>
+
+        <!-- ===== PAGE: DASHBOARD ===== -->
+        <main id="page-dashboard" class="page-content hidden">
+            <h1 id="welcome-user" class="text-3xl md:text-4xl font-bold mb-8">Welcome!</h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- User Info Card -->
+                <div class="md:col-span-1 bg-white p-6 rounded-2xl shadow-lg relative overflow-hidden">
+                    <div class="leaf-pattern"></div>
+                    <div class="relative z-10">
+                        <h2 class="text-2xl font-bold mb-4">Your Profile</h2>
+                        <div class="space-y-3">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Name</p>
+                                <p id="dash-user-name" class="text-lg font-semibold"></p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Email</p>
+                                <p id="dash-user-email" class="text-lg font-semibold"></p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Eco Points</p>
+                                <p id="dash-user-points" class="text-3xl font-bold text-leaf-green"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions Card -->
+                <div class="md:col-span-2 bg-white p-6 rounded-2xl shadow-lg">
+                    <h2 class="text-2xl font-bold mb-6">Actions</h2>
+                    <div class="space-y-4">
+                        <p class="text-gray-700">
+                            Help our database grow! If you scan a product that isn't in our system, you can submit it here and earn 10 eco points.
+                        </p>
+                        <button class="nav-link btn btn-green" data-page="request-product">
+                            <i class="fas fa-plus-circle mr-2"></i> Request a New Product
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- ===== PAGE: REQUEST PRODUCT ===== -->
+        <main id="page-request-product" class="page-content hidden">
+            <div class="max-w-2xl mx-auto bg-white p-8 md:p-10 rounded-2xl shadow-2xl relative overflow-hidden">
+                <div class="leaf-pattern"></div>
+                <h2 class="text-3xl font-bold text-center mb-6 text-dark-mode">Request a New Product</h2>
+                <p class="text-center text-gray-600 mb-8">
+                    Submit a product that's not in our database and earn <span class="font-bold text-leaf-green">10 points!</span>
+                </p>
+                <form id="request-form" class="space-y-6">
+                    <div>
+                        <label for="request-barcode" class="block text-sm font-medium text-gray-700 mb-1">Barcode</label>
+                        <input type="text" id="request-barcode" name="barcode" class="form-input" placeholder="Scan or type barcode" required>
+                    </div>
+                    <div>
+                        <label for="request-name" class="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+                        <input type="text" id="request-name" name="name" class="form-input" placeholder="e.g., Organic Milk" required>
+                    </div>
+                    <div>
+                        <label for="request-brandname" class="block text-sm font-medium text-gray-700 mb-1">Brand Name</label>
+                        <input type="text" id="request-brandname" name="brandname" class="form-input" placeholder="e.g., EcoFarms" required>
+                    </div>
+                    <div>
+                        <label for="request-image" class="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
+                        <input type="file" id="request-image" name="productImage" class="form-input file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-leaf-green file:text-white hover:file:bg-leaf-green-dark" accept="image/*" required>
+                    </div>
+                    <button type="submit" class="btn btn-green w-full !py-3 !text-lg">Submit Request</button>
+                </form>
+            </div>
+        </main>
+
+        <!-- ===== PAGE: ABOUT US ===== -->
+        <main id="page-about" class="page-content hidden">
+            <div class="max-w-4xl mx-auto bg-white p-8 md:p-10 rounded-2xl shadow-lg">
+                <h1 class="text-3xl md:text-4xl font-bold text-center mb-8">About ecoScanAi</h1>
+                <p class="text-lg text-gray-700 mb-6 leading-relaxed">
+                    ecoScanAi was born from a shared passion for sustainability and technology. Our mission is to empower consumers to make informed, eco-friendly choices with a simple scan. We believe that small, everyday decisions can collectively create a massive positive impact on our planet.
+                </p>
+                <p class="text-lg text-gray-700 mb-10 leading-relaxed">
+                    By providing transparent, easy-to-understand environmental scores for everyday products, we aim to bridge the information gap between consumers and sustainable practices.
+                </p>
+
+                <h2 class="text-2xl md:text-3xl font-bold text-center mb-8">The Developers</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-gray-50 p-6 rounded-lg shadow-sm text-center">
+                        <h3 class="text-xl font-semibold mb-1">Razibul Hasan Badhon</h3>
+                        <p class="text-leaf-green font-medium">Backend & Project Management</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-lg shadow-sm text-center">
+                        <h3 class="text-xl font-semibold mb-1">Abdullah Alif</h3>
+                        <p class="text-leaf-green font-medium">Backend</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-lg shadow-sm text-center">
+                        <h3 class="text-xl font-semibold mb-1">Rifat Hassan</h3>
+                        <p class="text-leaf-green font-medium">Frontend</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-lg shadow-sm text-center">
+                        <h3 class="text-xl font-semibold mb-1">Lubna Jahan Lipa</h3>
+                        <p class="text-leaf-green font-medium">Database</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- ===== PAGE: SCORING ===== -->
+        <main id="page-scoring" class="page-content hidden">
+            <div class="max-w-4xl mx-auto bg-white p-8 md:p-10 rounded-2xl shadow-lg">
+                <h1 class="text-3xl md:text-4xl font-bold text-center mb-8">Our Scoring Algorithm</h1>
+                <p class="text-lg text-gray-700 mb-8 leading-relaxed">
+                    Transparency is a core value at ecoScanAi. Our eco-score is calculated based on three key factors: Packaging, Transportation, and Disposal. This provides a holistic view of a product's environmental impact from production to end-of-life.
+                </p>
+
+                <div class="bg-leaf-green text-white text-center p-6 rounded-lg shadow-lg mb-10">
+                    <h2 class="text-2xl font-bold">Overall Score Formula</h2>
+                    <p class="text-lg mt-2 font-mono">
+                        (Packaging Score * 35%) + (Transport Score * 30%) + (Disposal Score * 35%)
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Packaging -->
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4 text-leaf-green flex items-center">
+                            <i class="fas fa-box-open mr-3"></i> Packaging
+                        </h3>
+                        <ul class="space-y-2">
+                            <li class="flex justify-between p-3 bg-gray-50 rounded"><span>None, Compostable Paper</span> <span class="font-bold">100</span></li>
+                            <li class="flex justify-between p-3 bg-gray-100 rounded"><span>Glass, Paper, Cardboard</span> <span class="font-bold">80</span></li>
+                            <li class="flex justify-between p-3 bg-gray-50 rounded"><span>Aluminum, Recyclable Plastic</span> <span class="font-bold">60</span></li>
+                            <li class="flex justify-between p-3 bg-gray-100 rounded"><span>Plastic, Mixed Materials</span> <span class="font-bold">20</span></li>
+                            <li class="flex justify-between p-3 bg-gray-50 rounded"><span>Unknown</span> <span class="font-bold">40</span></li>
+                        </ul>
+                    </div>
+                    <!-- Transport -->
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4 text-leaf-green flex items-center">
+                            <i class="fas fa-truck mr-3"></i> Transport
+                        </h3>
+                        <ul class="space-y-2">
+                            <li class="flex justify-between p-3 bg-gray-50 rounded"><span>Local, Regional</span> <span class="font-bold">95</span></li>
+                            <li class="flex justify-between p-3 bg-gray-100 rounded"><span>National</span> <span class="font-bold">70</span></li>
+                            <li class="flex justify-between p-3 bg-gray-50 rounded"><span>International</span> <span class="font-bold">30</span></li>
+                            <li class="flex justify-between p-3 bg-gray-100 rounded"><span>Unknown</span> <span class="font-bold">50</span></li>
+                        </ul>
+                    </div>
+                    <!-- Disposal -->
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4 text-leaf-green flex items-center">
+                            <i class="fas fa-recycle mr-3"></i> Disposal
+                        </h3>
+                        <ul class="space-y-2">
+                            <li class="flex justify-between p-3 bg-gray-50 rounded"><span>Compostable, Reusable</span> <span class="font-bold">100</span></li>
+                            <li class="flex justify-between p-3 bg-gray-100 rounded"><span>Recyclable</span> <span class="font-bold">85</span></li>
+                            <li class="flex justify-between p-3 bg-gray-50 rounded"><span>Minimal Impact</span> <span class="font-bold">70</span></li>
+                            <li class="flex justify-between p-3 bg-gray-100 rounded"><span>Landfill</span> <span class="font-bold">10</span></li>
+                            <li class="flex justify-between p-3 bg-gray-50 rounded"><span>Unknown</span> <span class="font-bold">40</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark-mode text-gray-300 mt-16">
+        <div class="container mx-auto px-4 py-8 text-center">
+            <p>&copy; 2025 ecoScanAi. All rights reserved.</p>
+            <p class="text-sm text-gray-400 mt-1">Making sustainability simple.</p>
+        </div>
+    </footer>
+
+
+    <!-- JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // === CONFIG ===
+            const API_BASE_URL = "https://ecoscan-an-eco-friendly-product-scanner.onrender.com"; // IMPORTANT: Change this to your live backend URL
+            let html5QrCode; // Scanner instance
+            let isScannerRunning = false;
+            
+            // === STATE ===
+            const state = {
+                currentPage: 'home',
+                loggedInUser: null,
+                authToken: null,
             };
 
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
+            // === SELECTORS ===
+            const $ = (selector) => document.querySelector(selector);
+            const $$ = (selector) => document.querySelectorAll(selector);
+
+            // Page Selectors
+            const pages = $$('.page-content');
+            const appContainer = $('#app-container');
+
+            // Header Selectors
+            const appHeader = $('#app-header');
+            const authLinks = $('#auth-links');
+            const userLinks = $('#user-links');
+            const mobileMenuBtn = $('#mobile-menu-btn');
+            const mobileMenu = $('#mobile-menu');
+            const mobileAuthLinks = $('#mobile-auth-links');
+            const mobileUserLinks = $('#mobile-user-links');
+
+            // Modal Selectors
+            const loadingSpinner = $('#loading-spinner');
+            const messageModal = $('#message-modal');
+            const messageText = $('#message-text');
+            const messageCloseBtn = $('#message-close-btn');
+
+            // Product Modal Selectors
+            const productModal = $('#product-modal');
+            const productModalClose = $('#product-modal-close');
+
+            // Form Selectors
+            const loginForm = $('#login-form');
+            const registerForm = $('#register-form');
+            const requestForm = $('#request-form');
+            
+            // Home Page Selectors
+            const startScannerBtn = $('#start-scanner-btn');
+            const scannerStatus = $('#scanner-status');
+            const reader = $('#reader');
+            const searchInput = $('#search-input');
+            const searchResultsContainer = $('#search-results-container');
+            const searchResultsList = $('#search-results-list');
+
+            // === UTILITY FUNCTIONS ===
+
+            /**
+             * Shows or hides the global loading spinner.
+             * @param {boolean} show - True to show, false to hide.
+             */
+            function showLoading(show) {
+                loadingSpinner.classList.toggle('hidden', !show);
             }
 
-            try {
-                const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-                    ...options,
-                    headers,
+            /**
+             * Shows a modal with a message.
+             * @param {string} message - The message to display.
+             * @param {boolean} [isError=false] - True to style as an error (e.g., red button).
+             */
+            function showMessage(message, isError = false) {
+                messageText.textContent = message;
+                messageCloseBtn.classList.toggle('btn-green', !isError);
+                messageCloseBtn.classList.toggle('bg-red-500', isError);
+                messageCloseBtn.classList.toggle('hover:bg-red-600', isError);
+                messageModal.classList.remove('hidden');
+            }
+
+            /**
+             * Navigates to a specific page.
+             * @param {string} pageId - The ID of the page to show (e.g., 'home', 'login').
+             */
+            function navigate(pageId) {
+                // Stop scanner if navigating away from home
+                if (state.currentPage === 'home' && pageId !== 'home' && isScannerRunning) {
+                    stopScanner();
+                }
+                
+                // If navigating to home, ensure the "Start Scanner" button is visible
+                if (pageId === 'home' && !isScannerRunning) {
+                    scannerStatus.textContent = "Click 'Start Scanner' to begin.";
+                    startScannerBtn.classList.remove('hidden');
+                }
+
+                pages.forEach(page => {
+                    page.classList.toggle('hidden', page.id !== `page-${pageId}`);
+                });
+                state.currentPage = pageId;
+                window.scrollTo(0, 0); // Scroll to top on page change
+                mobileMenu.classList.add('hidden'); // Close mobile menu on nav
+                
+                // Page-specific render functions
+                if (pageId === 'dashboard') renderDashboard();
+            }
+
+            /**
+             * Updates the header to show/hide auth vs. user links.
+             */
+            function updateHeader() {
+                const isLoggedIn = !!state.loggedInUser;
+                authLinks.classList.toggle('hidden', isLoggedIn);
+                userLinks.classList.toggle('hidden', !isLoggedIn);
+                mobileAuthLinks.classList.toggle('hidden', isLoggedIn);
+                mobileUserLinks.classList.toggle('hidden', !isLoggedIn);
+            }
+            
+            /**
+             * Saves auth token and user data to state and localStorage.
+             * @param {string} token - The JWT access token.
+             * @param {object} user - The user object.
+             */
+            function saveAuth(token, user) {
+                state.authToken = token;
+                state.loggedInUser = user;
+                localStorage.setItem('authToken', token);
+                localStorage.setItem('loggedInUser', JSON.stringify(user));
+            }
+
+            /**
+             * Clears auth data from state and localStorage.
+             */
+            function clearAuth() {
+                state.authToken = null;
+                state.loggedInUser = null;
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('loggedInUser');
+                updateHeader();
+            }
+
+            // === SCORING LOGIC (from backend) ===
+            function getPackagingScore(material) {
+                switch (material) {
+                    case "none": case "compostable_paper": return 100;
+                    case "glass": case "paper": case "cardboard": return 80;
+                    case "aluminum": case "recyclable_plastic": return 60;
+                    case "plastic": case "mixed_materials": return 20;
+                    default: return 40;
+                }
+            }
+            function getTransportScore(location) {
+                switch (location) {
+                    case "local": case "regional": return 95;
+                    case "national": return 70;
+                    case "international": return 30;
+                    default: return 50;
+                }
+            }
+            function getDisposalScore(method) {
+                switch (method) {
+                    case "compostable": case "reusable": return 100;
+                    case "recyclable": return 85;
+                    case "minimal_impact": return 70;
+                    case "landfill": return 10;
+                    default: return 40;
+                }
+            }
+            function getScoreRating(score) {
+                if (score >= 85) return "Excellent";
+                if (score >= 70) return "Good";
+                if (score >= 50) return "Average";
+                if (score >= 30) return "Poor";
+                return "Very Poor";
+            }
+
+            // === RENDER FUNCTIONS ===
+
+            /**
+             * Renders the product modal with product data and alternatives.
+             * @param {object} product - The main product object.
+             * @param {object[]} alternatives - An array of alternative product objects.
+             */
+            function renderProductModal(product, alternatives = []) {
+                if (!product) return;
+
+                // Calculate score breakdown
+                const packScore = getPackagingScore(product.packaging_material);
+                const transScore = getTransportScore(product.manufacturing_location);
+                const dispScore = getDisposalScore(product.disposal_method);
+                
+                // Main product info
+                $('#product-img').src = product.image_url || 'https://placehold.co/400x400/eeeeee/cccccc?text=No+Image';
+                $('#product-name').textContent = product.name;
+                $('#product-brand').textContent = product.brand_name;
+                $('#product-barcode').textContent = product.barcode;
+                $('#product-score').textContent = product.score;
+                $('#product-score-rating').textContent = getScoreRating(product.score);
+
+                // Score breakdown
+                $('#product-packaging').textContent = `${packScore}/100`;
+                $('#product-transport').textContent = `${transScore}/100`;
+                $('#product-disposal').textContent = `${dispScore}/100`;
+
+                // Alternatives
+                const altList = $('#product-alternatives-list');
+                const altContainer = $('#product-alternatives-container');
+                altList.innerHTML = ''; // Clear previous
+
+                if (alternatives && alternatives.length > 0) {
+                    alternatives.forEach(alt => {
+                        const altCard = `
+                            <div classclass="flex-shrink-0 w-48 bg-gray-50 border border-gray-200 rounded-lg shadow-sm p-3 cursor-pointer hover:shadow-md" data-barcode="${alt.barcode}">
+                                <img src="${alt.image_url || 'https://placehold.co/200x200/eeeeee/cccccc?text=No+Image'}" alt="${alt.name}" class="w-full h-24 object-cover rounded-md mb-2">
+                                <h4 class="font-semibold text-sm truncate">${alt.name}</h4>
+                                <p class="text-xs text-gray-500 truncate mb-2">${alt.brand_name}</p>
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-lg text-leaf-green">${alt.score}</span>
+                                    <span class="text-xs font-medium ${alt.score > product.score ? 'text-green-500' : 'text-red-500'}">
+                                        ${alt.score > product.score ? '+' : ''}${alt.score - product.score}
+                                    </span>
+                                </div>
+                            </div>
+                        `;
+                        altList.innerHTML += altCard;
+                    });
+                    altContainer.classList.remove('hidden');
+                } else {
+                    altContainer.classList.add('hidden');
+                }
+                
+                // Add click listeners to alternatives
+                altList.querySelectorAll('[data-barcode]').forEach(card => {
+                    card.addEventListener('click', () => {
+                        fetchProductByBarcode(card.dataset.barcode, false); // Fetch new product, don't stop scanner
+                    });
                 });
 
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ message: "An unknown error occurred" }));
-                    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-                }
-                
-                // Handle responses with no content (e.g., 204 No Content)
-                if (response.status === 204) {
-                    return null;
-                }
-
-                return await response.json();
-            } catch (error) {
-                console.error("API Error:", error.message);
-                throw error; // Re-throw to be caught by the component
+                productModal.classList.remove('hidden');
+                productModal.querySelector('.modal-content').classList.remove('scale-95');
             }
-        };
 
-        // --- Reusable Components ---
-
-        /**
-         * Leaf Icon Component
-         */
-        const LeafIcon = ({ className }) => (
-            <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M15.402 4.41a.75.75 0 01.79 1.137l-8.01 8.01a.75.75 0 01-1.06 0l-4.5-4.5a.75.75 0 111.06-1.06l3.97 3.97 7.25-7.25a.75.75 0 01.27-.29z" clipRule="evenodd" transform="translate(0, -2)" />
-                <path d="M10 18a.75.75 0 01-.75-.75V8.334a.75.75 0 011.5 0v8.916a.75.75 0 01-.75.75z" transform="rotate(45 10 10)" />
-                <path d="M10 18a.75.75 0 01-.75-.75V8.334a.75.75 0 011.5 0v8.916a.75.75 0 01-.75.75z" transform="rotate(-45 10 10)" />
-            </svg>
-        );
-
-        /**
-         * Search Icon Component
-         */
-        const SearchIcon = ({ className }) => (
-            <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-            </svg>
-        );
-        
-        /**
-         * Close Icon Component
-         */
-        const CloseIcon = ({ className }) => (
-            <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-        );
-
-        /**
-         * Generic Modal Component
-         */
-        const Modal = ({ children, onClose, title }) => (
-            <div 
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm"
-                onClick={onClose}
-            >
-                <div 
-                    className="bg-eco-dark-card rounded-lg shadow-2xl w-full max-w-md m-4 max-h-[90vh] overflow-y-auto"
-                    onClick={e => e.stopPropagation()} // Prevent closing modal on inner click
-                >
-                    <div className="flex items-center justify-between p-5 border-b border-gray-700">
-                        <h3 className="text-xl font-semibold text-eco-green">{title}</h3>
-                        <button 
-                            onClick={onClose}
-                            className="text-gray-400 hover:text-white transition-colors"
-                        >
-                            <CloseIcon className="w-6 h-6" />
-                        </button>
-                    </div>
-                    <div className="p-6">
-                        {children}
-                    </div>
-                </div>
-            </div>
-        );
-        
-        /**
-         * Notification Toast Component
-         */
-        const Notification = ({ message, type = 'error', onDismiss }) => {
-            if (!message) return null;
-
-            const bgColor = type === 'error' ? 'bg-red-500' : 'bg-eco-green-dark';
-            
-            useEffect(() => {
-                const timer = setTimeout(onDismiss, 3000);
-                return () => clearTimeout(timer);
-            }, [message, onDismiss]);
-
-            return (
-                <div className={`fixed top-20 right-5 z-50 p-4 rounded-lg shadow-lg text-white ${bgColor}`}>
-                    {message}
-                    <button onClick={onDismiss} className="ml-4 font-bold">X</button>
-                </div>
-            );
-        };
-        
-        /**
-         * Reusable Product Card
-         */
-        const ProductCard = ({ product, onClick }) => (
-            <div 
-                className="bg-eco-dark-card rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-eco-green/20 hover:shadow-lg cursor-pointer"
-                onClick={() => onClick(product)}
-            >
-                <img 
-                    src={product.image_url || 'https://placehold.co/400x300/2d3748/4ade80?text=No+Image'} 
-                    alt={product.name} 
-                    className="w-full h-40 object-cover"
-                    onError={(e) => e.target.src = 'https://placehold.co/400x300/2d3748/4ade80?text=No+Image'}
-                />
-                <div className="p-4">
-                    <h3 className="text-lg font-semibold text-white truncate">{product.name}</h3>
-                    <p className="text-sm text-gray-400 truncate">{product.brand_name}</p>
-                    <div className="mt-2 flex items-center justify-between">
-                        <span className="text-lg font-bold text-eco-green">Score: {product.score}</span>
-                        <span className="text-sm text-gray-300">${product.price.toFixed(2)}</span>
-                    </div>
-                </div>
-            </div>
-        );
-
-
-        // --- Page/View Components ---
-
-        /**
-         * Header Component
-         */
-        const Header = ({ auth, onNavClick, onLogout }) => (
-            <header className="sticky top-0 z-40 w-full bg-eco-dark/80 backdrop-blur-lg border-b border-gray-700 shadow-lg">
-                <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16">
-                        <div 
-                            className="flex-shrink-0 flex items-center gap-2 cursor-pointer"
-                            onClick={() => onNavClick('home')}
-                        >
-                            <LeafIcon className="w-8 h-8 text-eco-green" />
-                            <span className="text-2xl font-bold text-white">ecoScanAi</span>
-                        </div>
-                        
-                        {/* Desktop Nav */}
-                        <div className="hidden sm:flex sm:items-center sm:gap-4">
-                            <button onClick={() => onNavClick('home')} className="text-gray-300 hover:text-eco-green px-3 py-2 rounded-md text-sm font-medium transition-colors">Home</button>
-                            <button onClick={() => onNavClick('about')} className="text-gray-300 hover:text-eco-green px-3 py-2 rounded-md text-sm font-medium transition-colors">About Us</button>
-                            <button onClick={() => onNavClick('scoring')} className="text-gray-300 hover:text-eco-green px-3 py-2 rounded-md text-sm font-medium transition-colors">Scoring</button>
-                            
-                            <div className="w-px h-6 bg-gray-600 mx-2"></div>
-                            
-                            {auth ? (
-                                <>
-                                    <button 
-                                        onClick={() => onNavClick('dashboard')} 
-                                        className="text-gray-300 hover:text-eco-green px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                                    >
-                                        Dashboard
-                                    </button>
-                                    <button 
-                                        onClick={onLogout}
-                                        className="bg-eco-green-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-eco-green transition-all"
-                                    >
-                                        Logout
-                                    </button>
-                                </>
-                            ) : (
-                                <>
-                                    <button 
-                                        onClick={() => onNavClick('login')} 
-                                        className="text-gray-300 hover:text-eco-green px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                                    >
-                                        Login
-                                    </button>
-                                    <button 
-                                        onClick={() => onNavClick('register')}
-                                        className="bg-eco-green text-eco-dark px-4 py-2 rounded-full text-sm font-medium hover:bg-eco-green-dark hover:text-white transition-all"
-                                    >
-                                        Create Account
-                                    </button>
-                                </>
-                            )}
-                        </div>
-
-                        {/* Mobile Menu Button (placeholder) */}
-                        <div className="sm:hidden">
-                            {/* You can add a mobile menu dropdown here if needed */}
-                            <span className="text-gray-400 text-sm">Menu</span>
-                        </div>
-                    </div>
-                </nav>
-            </header>
-        );
-
-        /**
-         * Barcode Scanner Component
-         */
-        const BarcodeScanner = ({ onScanSuccess, onScanError }) => {
-            const scannerRef = React.useRef(null);
-
-            useEffect(() => {
-                // Check if the scanner is already initialized
-                if (scannerRef.current) {
+            /**
+             * Renders the user's dashboard with their info.
+             */
+            function renderDashboard() {
+                if (!state.loggedInUser) {
+                    showMessage("You must be logged in to view the dashboard.", true);
+                    navigate('login');
                     return;
                 }
-
-                // Initialize the scanner
-                const html5QrcodeScanner = new Html5QrcodeScanner(
-                    "qr-reader", // ID of the div element
-                    { 
-                        fps: 10, 
-                        qrbox: { width: 250, height: 150 },
-                        rememberLastUsedCamera: true,
-                        supportedScanTypes: [
-                            Html5QrcodeScanType.SCAN_TYPE_CAMERA,
-                        ]
-                    },
-                    false // verbose
-                );
-
-                const scanSuccess = (decodedText, decodedResult) => {
-                    // Stop the scanner
-                    html5QrcodeScanner.clear().catch(err => console.error("Failed to clear scanner", err));
-                    onScanSuccess(decodedText);
-                };
-
-                const scanError = (errorMessage) => {
-                    // handle scan error, but we can ignore most common ones
-                    // onScanError(errorMessage);
-                };
-
-                // Start scanning
-                html5QrcodeScanner.render(scanSuccess, scanError);
-                
-                // Store scanner instance to clear it on unmount
-                scannerRef.current = html5QrcodeScanner;
-
-                // Cleanup function
-                return () => {
-                    if (scannerRef.current) {
-                        scannerRef.current.clear().catch(err => {
-                            console.error("Failed to clear html5QrcodeScanner on unmount", err);
-                        });
-                        scannerRef.current = null;
-                    }
-                };
-            }, [onScanSuccess, onScanError]);
-
-            return (
-                <div className="w-full max-w-lg mx-auto bg-eco-dark-card rounded-lg shadow-xl overflow-hidden">
-                    <div id="qr-reader" className="w-full"></div>
-                    <p className="text-center text-gray-400 p-4">Align barcode within the frame</p>
-                </div>
-            );
-        };
-        
-        /**
-         * Home Page Component
-         */
-        const HomePage = ({ onScanSuccess, onSearch }) => {
-            const [query, setQuery] = useState("");
-
-            const handleSubmit = (e) => {
-                e.preventDefault();
-                if (query.trim()) {
-                    onSearch(query.trim());
-                }
-            };
-            
-            return (
-                <div className="container mx-auto px-4 py-8 flex flex-col items-center gap-12">
-                    {/* 1. Search Bar */}
-                    <form onSubmit={handleSubmit} className="w-full max-w-2xl relative">
-                        <input
-                            type="search"
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder="Search product by name..."
-                            className="w-full py-4 pl-12 pr-6 bg-eco-dark-card border border-gray-700 rounded-full text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-eco-green"
-                        />
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                            <SearchIcon className="w-6 h-6 text-gray-400" />
-                        </div>
-                    </form>
-
-                    {/* 2. Barcode Scanner */}
-                    <div className="w-full flex flex-col items-center gap-4">
-                        <h2 className="text-2xl font-semibold text-white">Scan Barcode</h2>
-                        <p className="text-gray-400 max-w-md text-center">
-                            Use your camera to scan a product's barcode and get its eco-score instantly.
-                        </p>
-                        <BarcodeScanner 
-                            onScanSuccess={onScanSuccess}
-                            onScanError={(err) => console.warn("Scan Error:", err)}
-                        />
-                    </div>
-                </div>
-            );
-        };
-        
-        /**
-         * Product Modal Component (for search/scan results)
-         */
-        const ProductModal = ({ barcode, onGoBack, auth, onProductRequest }) => {
-            const [loading, setLoading] = useState(true);
-            const [error, setError] = useState(null);
-            const [productData, setProductData] = useState(null); // { product: {}, alternatives: [] }
-
-            useEffect(() => {
-                if (!barcode) return;
-                
-                setLoading(true);
-                setError(null);
-                setProductData(null);
-                
-                api(`/products/barcode/${barcode}`)
-                    .then(data => {
-                        setProductData(data);
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        if (err.message.includes("not found")) {
-                            setError("Product not found in our database.");
-                        } else {
-                            setError("Failed to fetch product data.");
-                        }
-                    })
-                    .finally(() => {
-                        setLoading(false);
-                    });
-                
-            }, [barcode]);
-            
-            // This component handles the 'Product Not Found' case
-            if (error === "Product not found in our database.") {
-                return (
-                    <Modal title="Product Not Found" onClose={onGoBack}>
-                        <div className="text-center">
-                            <p className="text-gray-300 mb-4">
-                                We couldn't find the barcode "{barcode}" in our database.
-                            </p>
-                            {auth ? (
-                                <button
-                                    onClick={() => onProductRequest(barcode)}
-                                    className="w-full bg-eco-green text-eco-dark font-bold py-3 px-4 rounded-lg transition-all hover:bg-eco-green-dark hover:text-white"
-                                >
-                                    Help Us by Requesting This Product
-                                </button>
-                            ) : (
-                                <p className="text-gray-400 p-3 bg-gray-700 rounded-lg">
-                                    Please <a href="#" onClick={(e) => { e.preventDefault(); /* todo: trigger login */ }} className="text-eco-green underline">login</a> to request this product and earn points!
-                                </p>
-                            )}
-                        </div>
-                    </Modal>
-                );
+                $('#welcome-user').textContent = `Welcome, ${state.loggedInUser.name}!`;
+                $('#dash-user-name').textContent = state.loggedInUser.name;
+                $('#dash-user-email').textContent = state.loggedInUser.email;
+                $('#dash-user-points').textContent = state.loggedInUser.points;
             }
             
-            if (loading) {
-                return (
-                    <Modal title="Loading Product..." onClose={onGoBack}>
-                        <div className="flex justify-center items-center h-40">
-                           <LeafIcon className="w-12 h-12 text-eco-green animate-spin" />
-                        </div>
-                    </Modal>
-                );
-            }
-            
-            if (error) {
-                return (
-                    <Modal title="Error" onClose={onGoBack}>
-                        <p className="text-red-400 text-center">{error}</p>
-                    </Modal>
-                );
-            }
-            
-            if (!productData || !productData.product) {
-                return null;
-            }
-            
-            const { product, alternatives } = productData;
-
-            return (
-                <Modal title="Product Details" onClose={onGoBack}>
-                    <div className="space-y-6">
-                        {/* Main Product */}
-                        <div className="flex flex-col sm:flex-row gap-4">
-                            <img
-                                src={product.image_url || 'https://placehold.co/400x400/2d3748/4ade80?text=No+Image'}
-                                alt={product.name}
-                                className="w-full sm:w-1/3 h-auto object-cover rounded-lg"
-                                onError={(e) => e.target.src = 'https://placehold.co/400x400/2d3748/4ade80?text=No+Image'}
-                            />
-                            <div className="flex-1">
-                                <h2 className="text-2xl font-bold text-white">{product.name}</h2>
-                                <p className="text-lg text-gray-400">{product.brand_name}</p>
-                                <p className="text-xl font-bold text-gray-200 mt-2">${product.price.toFixed(2)}</p>
-                                
-                                <div className="mt-4 p-4 bg-gray-700 rounded-lg">
-                                    <h4 className="text-lg font-semibold text-eco-green">Eco Score: {product.score} / 100</h4>
-                                    <p className="text-sm text-gray-300">
-                                        Based on packaging, manufacturing, and disposal.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        {/* Score Breakdown */}
-                        <div className="space-y-2">
-                             <h4 className="text-lg font-semibold text-gray-200">Score Details:</h4>
-                             <div className="flex justify-between text-gray-300">
-                                <span>Packaging Material:</span>
-                                <span className="font-medium text-white capitalize">{product.packaging_material.replace(/_/g, ' ')}</span>
-                             </div>
-                             <div className="flex justify-between text-gray-300">
-                                <span>Manufacturing Location:</span>
-                                <span className="font-medium text-white capitalize">{product.manufacturing_location}</span>
-                             </div>
-                             <div className="flex justify-between text-gray-300">
-                                <span>Disposal Method:</span>
-                                <span className="font-medium text-white capitalize">{product.disposal_method.replace(/_/g, ' ')}</span>
-                             </div>
-                        </div>
-
-                        {/* Alternatives */}
-                        {alternatives && alternatives.length > 0 && (
-                            <div className="space-y-3">
-                                <h3 className="text-xl font-semibold text-eco-green">Greener Alternatives</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {alternatives.map(alt => (
-                                        <ProductCard key={alt.id} product={alt} onClick={() => alert(`Clicked on ${alt.name}`)} />
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </Modal>
-            );
-        };
-        
-        /**
-         * Search Results Modal
-         */
-        const SearchResultsModal = ({ query, onGoBack, onProductSelect }) => {
-            const [loading, setLoading] = useState(true);
-            const [error, setError] = useState(null);
-            const [results, setResults] = useState([]);
-
-            useEffect(() => {
-                if (!query) return;
-
-                setLoading(true);
-                setError(null);
-                setResults([]);
-
-                api(`/products/search?q=${encodeURIComponent(query)}`)
-                    .then(data => {
-                        setResults(data || []); // Ensure data is an array
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        setError("Search failed. Please try again.");
-                    })
-                    .finally(() => {
-                        setLoading(false);
-                    });
-
-            }, [query]);
-
-            return (
-                <Modal title={`Search Results for "${query}"`} onClose={onGoBack}>
-                    <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-                        {loading && (
-                            <div className="flex justify-center items-center h-40">
-                                <LeafIcon className="w-12 h-12 text-eco-green animate-spin" />
-                            </div>
-                        )}
-                        {error && <p className="text-red-400 text-center">{error}</p>}
-                        {!loading && !error && results.length === 0 && (
-                            <p className="text-gray-400 text-center">No products found matching your search.</p>
-                        )}
-                        {!loading && !error && results.length > 0 && (
-                            <div className="grid grid-cols-1 gap-4">
-                                {results.map(product => (
-                                    <div 
-                                        key={product.id}
-                                        className="flex items-center gap-4 bg-eco-dark-card p-3 rounded-lg cursor-pointer hover:bg-gray-700"
-                                        onClick={() => onProductSelect(product.barcode)}
-                                    >
-                                        <img 
-                                            src={product.image_url || 'https://placehold.co/100x100/2d3748/4ade80?text=...'}
-                                            alt={product.name}
-                                            className="w-16 h-16 object-cover rounded-md flex-shrink-0"
-                                            onError={(e) => e.target.src = 'https://placehold.co/100x100/2d3748/4ade80?text=...'}
-                                        />
-                                        <div className="flex-1 overflow-hidden">
-                                            <h4 className="text-base font-semibold text-white truncate">{product.name}</h4>
-                                            <p className="text-sm text-gray-400 truncate">{product.brand_name}</p>
-                                        </div>
-                                        <span className="text-base font-bold text-eco-green">Score: {product.score}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </Modal>
-            );
-        };
-        
-        /**
-         * Product Request Modal
-         */
-        const ProductRequestModal = ({ barcode, auth, onGoBack, onNotify }) => {
-            const [formData, setFormData] = useState({
-                barcode: barcode || '',
-                name: '',
-                brandname: '', // Matches backend 'brandname'
-                productImage: null,
-            });
-            const [loading, setLoading] = useState(false);
-            
-            const handleChange = (e) => {
-                const { name, value, files } = e.target;
-                setFormData(prev => ({
-                    ...prev,
-                    [name]: files ? files[0] : value
-                }));
-            };
-            
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                if (!formData.name || !formData.barcode || !formData.productImage) {
-                    onNotify("Please fill in all fields and upload an image.", "error");
+            /**
+             * Renders search results in the dropdown.
+             * @param {object[]} products - Array of product objects.
+             */
+            function renderSearchResults(products) {
+                searchResultsList.innerHTML = ''; // Clear old results
+                if (products.length === 0) {
+                    searchResultsList.innerHTML = `<li class="p-4 text-gray-500">No products found.</li>`;
+                    searchResultsContainer.classList.remove('hidden');
                     return;
                 }
                 
-                setLoading(true);
-                
-                // We need to use FormData for file uploads
-                const data = new FormData();
-                data.append('barcode', formData.barcode);
-                data.append('name', formData.name);
-                data.append('brandname', formData.brandname);
-                data.append('productImage', formData.productImage);
+                products.forEach(product => {
+                    const li = document.createElement('li');
+                    li.className = 'p-4 hover:bg-gray-100 cursor-pointer flex items-center space-x-4';
+                    li.innerHTML = `
+                        <img src="${product.image_url || 'https://placehold.co/50x50/eeeeee/cccccc?text=N/A'}" class="w-12 h-12 rounded-md object-cover">
+                        <div>
+                            <p class="font-semibold text-dark-mode">${product.name}</p>
+                            <p class="text-sm text-gray-500">${product.brand_name}</p>
+                        </div>
+                        <span class="ml-auto font-bold text-leaf-green">${product.score}</span>
+                    `;
+                    li.addEventListener('click', () => {
+                        fetchProductByBarcode(product.barcode);
+                        searchResultsContainer.classList.add('hidden');
+                        searchInput.value = '';
+                    });
+                    searchResultsList.appendChild(li);
+                });
+                searchResultsContainer.classList.remove('hidden');
+            }
 
+            // === API CALLS ===
+
+            /**
+             * Fetches a product by its barcode.
+             * @param {string} barcode - The barcode to look up.
+             * @param {boolean} [stopScan=true] - Whether to stop the scanner after fetch.
+             */
+            async function fetchProductByBarcode(barcode, stopScan = true) {
+                if (stopScan && isScannerRunning) {
+                    stopScanner();
+                    scannerStatus.textContent = "Scanner stopped. Processing...";
+                }
+                showLoading(true);
                 try {
-                    // We can't use the JSON 'api' helper for FormData
-                    const response = await fetch(`${API_BASE_URL}/products/request`, {
-                        method: 'POST',
-                        headers: {
-                            // Don't set Content-Type, browser does it for FormData
-                            'Authorization': `Bearer ${auth.token}`,
-                        },
-                        body: data,
-                    });
+                    const response = await fetch(`${API_BASE_URL}/api/v1/products/barcode/${barcode}`);
+                    
+                    if (response.status === 404) {
+                        scannerStatus.textContent = "Product not found.";
+                        showMessage("Product not found. Would you like to request to add it?");
+                        // If logged in, pre-fill request form
+                        if (state.loggedInUser) {
+                            navigate('request-product');
+                            $('#request-barcode').value = barcode;
+                        }
+                        return;
+                    }
                     
                     if (!response.ok) {
-                        const errorData = await response.json().catch(() => ({ message: "An unknown error occurred" }));
-                        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                        throw new Error(`Server error: ${response.statusText}`);
                     }
                     
-                    const result = await response.json();
-                    onNotify("Product requested successfully! You earned 10 points.", "success");
-                    onGoBack(); // Close the modal
-                    // TODO: Could also update auth state with new points
-                    
-                } catch (error) {
-                    console.error("Product Request Error:", error);
-                    onNotify(error.message, "error");
-                } finally {
-                    setLoading(false);
-                }
-            };
-            
-            return (
-                <Modal title="Request New Product" onClose={onGoBack}>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label htmlFor="barcode" className="block text-sm font-medium text-gray-300">Barcode</label>
-                            <input
-                                type="text"
-                                name="barcode"
-                                id="barcode"
-                                value={formData.barcode}
-                                onChange={handleChange}
-                                required
-                                className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-eco-green focus:border-eco-green"
-                            />
-                        </div>
-                        <div>
-                            <label htmlFor="name" className="block text-sm font-medium text-gray-300">Product Name</label>
-                            <input
-                                type="text"
-                                name="name"
-                                id="name"
-                                value={formData.name}
-                                onChange={handleChange}
-                                required
-                                className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-eco-green focus:border-eco-green"
-                            />
-                        </div>
-                        <div>
-                            <label htmlFor="brandname" className="block text-sm font-medium text-gray-300">Brand Name (Optional)</label>
-                            <input
-                                type="text"
-                                name="brandname"
-                                id="brandname"
-                                value={formData.brandname}
-                                onChange={handleChange}
-                                className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-eco-green focus:border-eco-green"
-                            />
-                        </div>
-                        <div>
-                            <label htmlFor="productImage" className="block text-sm font-medium text-gray-300">Product Image</label>
-                            <input
-                                type="file"
-                                name="productImage"
-                                id="productImage"
-                                accept="image/*"
-                                onChange={handleChange}
-                                required
-                                className="mt-1 block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-eco-green file:text-eco-dark hover:file:bg-eco-green-dark hover:file:text-white"
-                            />
-                        </div>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-eco-dark bg-eco-green hover:bg-eco-green-dark hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                        >
-                            {loading ? <LeafIcon className="w-5 h-5 animate-spin" /> : 'Submit Request'}
-                        </button>
-                    </form>
-                </Modal>
-            );
-        };
-        
-        /**
-         * Auth Form Component (Login/Register)
-         */
-        const AuthForm = ({ mode, onAuthSuccess, onNotify }) => {
-            const [formData, setFormData] = useState({ name: '', email: '', password: '' });
-            const [loading, setLoading] = useState(false);
-            const isLogin = mode === 'login';
-            
-            const handleChange = (e) => {
-                const { name, value } = e.target;
-                setFormData(prev => ({ ...prev, [name]: value }));
-            };
-            
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                setLoading(true);
-                onNotify(null); // Clear previous errors
+                    const data = await response.json();
+                    renderProductModal(data.product, data.alternatives);
+                    scannerStatus.textContent = `Found: ${data.product.name}`;
 
-                const endpoint = isLogin ? '/auth/login' : '/auth/register';
-                const body = isLogin 
-                    ? JSON.stringify({ email: formData.email, password: formData.password })
-                    : JSON.stringify({ name: formData.name, email: formData.email, password: formData.password });
-                
+                } catch (error) {
+                    console.error("Error fetching product:", error);
+                    showMessage(`Error: ${error.message}`, true);
+                    if (isScannerRunning) scannerStatus.textContent = "Error. Try again.";
+                } finally {
+                    showLoading(false);
+                    // Optionally restart scanner
+                    // if (!stopScan && !isScannerRunning) startScanner();
+                }
+            }
+
+            /**
+             * Searches for products by name.
+             * @param {string} query - The search query.
+             */
+            async function searchProducts(query) {
+                if (query.length < 2) {
+                    searchResultsContainer.classList.add('hidden');
+                    return;
+                }
+                // No loading spinner for search for a faster feel
                 try {
-                    const data = await api(endpoint, { method: 'POST', body });
-                    onAuthSuccess(data); // data is LoginResponse or repo.User
+                    const response = await fetch(`${API_BASE_URL}/api/v1/products/search?q=${encodeURIComponent(query)}`);
+                    if (!response.ok) throw new Error('Search failed');
+                    
+                    const products = await response.json();
+                    renderSearchResults(products || []);
                 } catch (error) {
-                    onNotify(error.message, 'error');
+                    console.error("Error searching:", error);
+                    searchResultsList.innerHTML = `<li class="p-4 text-red-500">Search error.</li>`;
+                    searchResultsContainer.classList.remove('hidden');
+                }
+            }
+
+            // === BARCODE SCANNER LOGIC ===
+
+            const onScanSuccess = (decodedText, decodedResult) => {
+                // `decodedText` is the barcode
+                console.log(`Scan result: ${decodedText}`, decodedResult);
+                scannerStatus.textContent = `Found barcode: ${decodedText}`;
+                fetchProductByBarcode(decodedText);
+            };
+
+            const onScanFailure = (error) => {
+                // This will fire continuously, don't log it unless debugging
+                // console.warn(`Scan failure: ${error}`);
+                scannerStatus.textContent = "Scanning... Align barcode in the box.";
+            };
+
+            function startScanner() {
+                if (isScannerRunning) return;
+                
+                // Request camera permissions
+                Html5Qrcode.getCameras().then(cameras => {
+                    if (cameras && cameras.length) {
+                        // Use the 'environment' (back) camera if available
+                        const cameraId = cameras.find(c => c.label.toLowerCase().includes('back'))?.id || cameras[0].id;
+                        
+                        html5QrCode = new Html5Qrcode("reader");
+                        html5QrCode.start(
+                            cameraId,
+                            {
+                                fps: 10,
+                                qrbox: (viewfinderWidth, viewfinderHeight) => {
+                                    const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                                    const qrboxSize = Math.floor(minEdge * 0.8);
+                                    return { width: qrboxSize, height: qrboxSize * 0.5 }; // Rectangular box for barcodes
+                                }
+                            },
+                            onScanSuccess,
+                            onScanFailure
+                        )
+                        .then(() => {
+                            isScannerRunning = true;
+                            startScannerBtn.classList.add('hidden');
+                            scannerStatus.textContent = "Scanning...";
+                            reader.style.borderColor = "#4CAF50";
+                        })
+                        .catch(err => {
+                            console.error("Failed to start scanner:", err);
+                            scannerStatus.textContent = `Error: ${err}. Try refreshing.`;
+                            reader.style.borderColor = "#ef4444";
+                        });
+                    } else {
+                        scannerStatus.textContent = "No cameras found on this device.";
+                    }
+                }).catch(err => {
+                    console.error("Error getting cameras:", err);
+                    scannerStatus.textContent = "Camera permission denied or error.";
+                    startScannerBtn.classList.remove('hidden');
+                });
+            }
+
+            function stopScanner() {
+                if (!html5QrCode || !isScannerRunning) return;
+                
+                html5QrCode.stop()
+                    .then(() => {
+                        console.log("Scanner stopped.");
+                        isScannerRunning = false;
+                        scannerStatus.textContent = "Scanner stopped.";
+                        startScannerBtn.classList.remove('hidden');
+                        reader.style.borderColor = "#4CAF50";
+                        // Clear the reader box
+                        reader.innerHTML = '';
+                    })
+                    .catch(err => {
+                        console.error("Failed to stop scanner:", err);
+                    });
+            }
+            
+            // === EVENT LISTENERS ===
+
+            // Navigation Links
+            appHeader.addEventListener('click', (e) => {
+                const navLink = e.target.closest('.nav-link');
+                if (navLink) {
+                    e.preventDefault();
+                    const page = navLink.dataset.page;
+                    if (page) navigate(page);
+                }
+            });
+
+            // Logout Buttons
+            $('#logout-btn').addEventListener('click', (e) => {
+                e.preventDefault();
+                clearAuth();
+                navigate('home');
+            });
+            $('#mobile-logout-btn').addEventListener('click', (e) => {
+                e.preventDefault();
+                clearAuth();
+                navigate('home');
+            });
+
+            // Mobile Menu Toggle
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            // Close Message Modal
+            messageCloseBtn.addEventListener('click', () => {
+                messageModal.classList.add('hidden');
+            });
+            
+            // Close Product Modal
+            productModalClose.addEventListener('click', () => {
+                productModal.classList.add('hidden');
+                productModal.querySelector('.modal-content').classList.add('scale-95');
+                // Restart scanner if we are on the home page
+                if (state.currentPage === 'home' && !isScannerRunning) {
+                    startScanner();
+                }
+            });
+            
+            // Scanner Start Button
+            startScannerBtn.addEventListener('click', startScanner);
+
+            // Login Form
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                showLoading(true);
+                const email = $('#login-email').value;
+                const password = $('#login-password').value;
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                    
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.message || 'Login failed');
+
+                    saveAuth(data.access_token, data.user);
+                    updateHeader();
+                    navigate('dashboard');
+                    loginForm.reset();
+
+                } catch (error) {
+                    showMessage(error.message, true);
                 } finally {
-                    setLoading(false);
+                    showLoading(false);
                 }
-            };
-            
-            return (
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {!isLogin && (
-                        <div>
-                            <label htmlFor="name" className="block text-sm font-medium text-gray-300">Name</label>
-                            <input
-                                type="text"
-                                name="name"
-                                id="name"
-                                value={formData.name}
-                                onChange={handleChange}
-                                required
-                                className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-eco-green focus:border-eco-green"
-                            />
-                        </div>
-                    )}
-                    <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-300">Email address</label>
-                        <input
-                            type="email"
-                            name="email"
-                            id="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            required
-                            autoComplete="email"
-                            className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-eco-green focus:border-eco-green"
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="password" className="block text-sm font-medium text-gray-300">Password</label>
-                        <input
-                            type="password"
-                            name="password"
-                            id="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            required
-                            autoComplete={isLogin ? "current-password" : "new-password"}
-                            className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-eco-green focus:border-eco-green"
-                        />
-                        {!isLogin && <p className="mt-1 text-xs text-gray-400">Must be at least 8 characters long.</p>}
-                    </div>
-                    
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-eco-dark bg-eco-green hover:bg-eco-green-dark hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                    >
-                        {loading ? (
-                            <LeafIcon className="w-5 h-5 animate-spin" />
-                        ) : (
-                            isLogin ? 'Sign In' : 'Create Account'
-                        )}
-                    </button>
-                </form>
-            );
-        };
+            });
 
-        /**
-         * Dashboard Page Component
-         */
-        const DashboardPage = ({ auth }) => {
-            if (!auth) return null; // Should be protected by router
-            
-            const { user } = auth;
-            
-            return (
-                <div className="container mx-auto px-4 py-8">
-                    <h1 className="text-4xl font-bold text-white mb-2">
-                        Welcome back, <span className="text-eco-green">{user.name}</span>!
-                    </h1>
-                    <p className="text-lg text-gray-400 mb-8">Here's your eco-dashboard.</p>
+            // Register Form
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                showLoading(true);
+                const name = $('#register-name').value;
+                const email = $('#register-email').value;
+                const password = $('#register-password').value;
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, email, password })
+                    });
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Profile Info */}
-                        <div className="bg-eco-dark-card p-6 rounded-lg shadow-lg">
-                            <h2 className="text-2xl font-semibold text-eco-green mb-4">Profile Info</h2>
-                            <div className="space-y-3">
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Name:</span>
-                                    <span className="text-white font-medium">{user.name}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Email:</span>
-                                    <span className="text-white font-medium">{user.email}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Member Since:</span>
-                                    <span className="text-white font-medium">{new Date(user.created_at).toLocaleDateString()}</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        {/* Score/Points */}
-                        <div className="bg-eco-dark-card p-6 rounded-lg shadow-lg flex flex-col items-center justify-center text-center">
-                            <h2 className="text-2xl font-semibold text-eco-green mb-2">Your Eco-Points</h2>
-                            <p className="text-6xl font-bold text-white">{user.points}</p>
-                            <p className="text-gray-400 mt-2">
-                                Keep scanning and requesting products to earn more!
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-        
-        /**
-         * About Us Page Component
-         */
-        const AboutPage = () => (
-            <div className="container mx-auto px-4 py-8">
-                <div className="max-w-3xl mx-auto bg-eco-dark-card p-8 rounded-lg shadow-lg">
-                    <h1 className="text-4xl font-bold text-center text-eco-green mb-6">About ecoScanAi</h1>
-                    <p className="text-lg text-gray-300 mb-6 leading-relaxed">
-                        ecoScanAi was born from a shared passion for sustainability and technology. Our mission is to empower consumers to make environmentally conscious decisions with a simple scan of a barcode. We believe that by providing transparent, easy-to-understand data on product sustainability, we can collectively drive change and promote a greener future.
-                    </p>
-                    
-                    <h2 className="text-3xl font-semibold text-white text-center mb-8">Meet the Team</h2>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-gray-700 p-5 rounded-lg text-center">
-                            <h3 className="text-xl font-bold text-white">Razibul Hasan Badhon</h3>
-                            <p className="text-eco-green font-medium">Backend & Project Management</p>
-                        </div>
-                        <div className="bg-gray-700 p-5 rounded-lg text-center">
-                            <h3 className="text-xl font-bold text-white">Abdullah Alif</h3>
-                            <p className="text-eco-green font-medium">Backend Developer</p>
-                        </div>
-                        <div className="bg-gray-700 p-5 rounded-lg text-center">
-                            <h3 className="text-xl font-bold text-white">Rifat Hassan</h3>
-                            <p className="text-eco-green font-medium">Frontend Developer</p>
-                        </div>
-                        <div className="bg-gray-700 p-5 rounded-lg text-center">
-                            <h3 className="text-xl font-bold text-white">Lubna Jahan Lipa</h3>
-                            <p className="text-eco-green font-medium">Database Management</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-        
-        /**
-         * Scoring Algorithm Page Component
-         */
-        const ScoringPage = () => {
-            const scoreDetails = [
-                {
-                    title: "Packaging (35% Weight)",
-                    categories: [
-                        { name: "None, Compostable Paper", score: 100 },
-                        { name: "Glass, Paper, Cardboard", score: 80 },
-                        { name: "Aluminum, Recyclable Plastic", score: 60 },
-                        { name: "Unknown / Other", score: 40 },
-                        { name: "Plastic, Mixed Materials", score: 20 },
-                    ]
-                },
-                {
-                    title: "Transportation (30% Weight)",
-                    categories: [
-                        { name: "Local, Regional", score: 95 },
-                        { name: "National", score: 70 },
-                        { name: "Unknown / Other", score: 50 },
-                        { name: "International", score: 30 },
-                    ]
-                },
-                {
-                    title: "Disposal (35% Weight)",
-                    categories: [
-                        { name: "Compostable, Reusable", score: 100 },
-                        { name: "Recyclable", score: 85 },
-                        { name: "Minimal Impact", score: 70 },
-                        { name: "Unknown / Other", score: 40 },
-                        { name: "Landfill", score: 10 },
-                    ]
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.message || 'Registration failed');
+
+                    showMessage("Account created successfully! Please log in.");
+                    navigate('login');
+                    registerForm.reset();
+
+                } catch (error) {
+                    showMessage(error.message, true);
+                } finally {
+                    showLoading(false);
                 }
-            ];
-            
-            return (
-                <div className="container mx-auto px-4 py-8">
-                    <div className="max-w-3xl mx-auto bg-eco-dark-card p-8 rounded-lg shadow-lg">
-                        <h1 className="text-4xl font-bold text-center text-eco-green mb-6">Our Scoring Algorithm</h1>
-                        <p className="text-lg text-gray-300 mb-6 leading-relaxed">
-                            To ensure transparency and help you understand our product ratings, we've outlined our scoring algorithm below. The final "Eco-Score" (out of 100) is a weighted average of three key factors: Packaging, Transportation, and Disposal.
-                        </p>
-                        
-                        <div className="text-center bg-gray-700 p-4 rounded-lg mb-8">
-                            <p className="text-xl font-bold text-white">
-                                Final Score = (Packaging * 0.35) + (Transportation * 0.30) + (Disposal * 0.35)
-                            </p>
-                        </div>
-                        
-                        <div className="space-y-8">
-                            {scoreDetails.map((section, idx) => (
-                                <div key={idx}>
-                                    <h2 className="text-2xl font-semibold text-white mb-3">{section.title}</h2>
-                                    <ul className="divide-y divide-gray-700">
-                                        {section.categories.map((cat, catIdx) => (
-                                            <li key={catIdx} className="flex justify-between items-center py-3">
-                                                <span className="text-gray-300">{cat.name}</span>
-                                                <span className="font-bold text-lg text-eco-green">{cat.score} pts</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            ))}
-                        </div>
-                        
-                        <p className="text-sm text-gray-400 mt-8 text-center">
-                            Disclaimer: This scoring model is based on our internal logic and publicly available data. It is intended for informational purposes to guide consumers and may not capture every nuance of a product's lifecycle.
-                        </p>
-                    </div>
-                </div>
-            );
-        };
-        
-        /**
-         * Footer Component
-         */
-        const Footer = () => (
-            <footer className="bg-eco-dark border-t border-gray-700 mt-16">
-                <div className="container mx-auto px-4 py-6 text-center text-gray-400">
-                    <p>&copy; {new Date().getFullYear()} ecoScanAi. All rights reserved.</p>
-                </div>
-            </footer>
-        );
+            });
 
-        // --- Main App Component ---
-
-        function App() {
-            // --- State ---
-            const [page, setPage] = useState('home'); // 'home', 'about', 'scoring', 'dashboard'
-            const [modal, setModal] = useState(null); // 'login', 'register', 'product', 'search', 'request'
-            const [modalData, setModalData] = useState(null); // Stores barcode, query, etc. for the modal
-            const [auth, setAuth] = useState(null); // { token: '...', user: {...} }
-            const [notification, setNotification] = useState({ message: null, type: 'error' });
-            
-            // --- Auth Effect ---
-            // Load auth data from localStorage on initial render
-            useEffect(() => {
-                const storedAuth = localStorage.getItem('ecoScanAuth');
-                if (storedAuth) {
-                    setAuth(JSON.parse(storedAuth));
-                }
-            }, []);
-
-            // --- Handlers ---
-            
-            const handleNotify = (message, type = 'error') => {
-                setNotification({ message, type });
-            };
-            
-            const handleAuthSuccess = (data) => {
-                let authData;
-                if (data.access_token) { // Login response
-                    authData = { token: data.access_token, user: data.user };
-                    handleNotify("Login successful!", "success");
-                } else { // Register response (returns user only)
-                    // We need to auto-login the user after register, but the API doesn't return a token
-                    // For now, just notify and ask them to log in.
-                    // A better backend would return a token on register or I'd have to make a login call.
-                    // For this demo, I'll just show a success message.
-                    handleNotify("Registration successful! Please log in.", "success");
-                    setModal('login');
+            // Request Product Form
+            requestForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!state.authToken) {
+                    showMessage("You must be logged in to submit a request.", true);
+                    navigate('login');
                     return;
                 }
                 
-                setAuth(authData);
-                localStorage.setItem('ecoScanAuth', JSON.stringify(authData));
-                setModal(null); // Close auth modal
-                setPage('dashboard'); // Redirect to dashboard
-            };
-            
-            const handleLogout = () => {
-                setAuth(null);
-                localStorage.removeItem('ecoScanAuth');
-                setPage('home');
-                handleNotify("Logged out successfully.", "success");
-            };
-            
-            const handleNavClick = (targetPage) => {
-                // Handle auth modal triggers
-                if (targetPage === 'login' || targetPage === 'register') {
-                    setModal(targetPage);
-                    setModalData(null);
-                } else {
-                    // Handle page navigation
-                    setPage(targetPage);
-                    setModal(null); // Close any open modals
-                    setModalData(null);
-                }
-            };
-            
-            const handleScanSuccess = (barcode) => {
-                console.log("Scanned Barcode:", barcode);
-                setModal('product');
-                setModalData({ barcode });
-            };
-            
-            const handleSearch = (query) => {
-                console.log("Search Query:", query);
-                setModal('search');
-                setModalData({ query });
-            };
-            
-            const handleProductSelect = (barcode) => {
-                // From search results, open product modal
-                setModal('product');
-                setModalData({ barcode });
-            };
-            
-            const handleProductRequest = (barcode) => {
-                setModal('request');
-                setModalData({ barcode });
-            };
-            
-            const closeModal = () => {
-                setModal(null);
-                setModalData(null);
-                // After closing scanner-related modals, we need to re-render homepage
-                // to re-initialize the scanner. A bit of a hack.
-                if (page === 'home' && (modal === 'product' || modal === 'search' || modal === 'request')) {
-                    setPage(''); // Force re-mount
-                    setTimeout(() => setPage('home'), 0);
-                }
-            };
+                showLoading(true);
+                const formData = new FormData(requestForm);
+                
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/v1/products/request`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${state.authToken}`
+                        },
+                        body: formData
+                    });
+                    
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.message || 'Request failed');
+                    
+                    // Update user points locally
+                    state.loggedInUser.points += 10;
+                    saveAuth(state.authToken, state.loggedInUser);
+                    
+                    showMessage("Request submitted successfully! You've earned 10 points.");
+                    requestForm.reset();
+                    navigate('dashboard');
 
-            // --- Render Logic ---
-            
-            const renderPage = () => {
-                switch(page) {
-                    case 'home':
-                        return <HomePage onScanSuccess={handleScanSuccess} onSearch={handleSearch} />;
-                    case 'about':
-                        return <AboutPage />;
-                    case 'scoring':
-                        return <ScoringPage />;
-                    case 'dashboard':
-                        return auth ? <DashboardPage auth={auth} /> : <HomePage onScanSuccess={handleScanSuccess} onSearch={handleSearch} />;
-                    default:
-                        return <HomePage onScanSuccess={handleScanSuccess} onSearch={handleSearch} />;
+                } catch (error) {
+                    if (error.message.includes('Token has expired') || error.message.includes('Invalid token')) {
+                        showMessage("Your session has expired. Please log in again.", true);
+                        clearAuth();
+                        navigate('login');
+                    } else {
+                        showMessage(error.message, true);
+                    }
+                } finally {
+                    showLoading(false);
                 }
-            };
+            });
             
-            const renderModal = () => {
-                switch(modal) {
-                    case 'login':
-                        return (
-                            <Modal title="Login to ecoScanAi" onClose={closeModal}>
-                                <AuthForm 
-                                    mode="login" 
-                                    onAuthSuccess={handleAuthSuccess}
-                                    onNotify={handleNotify} 
-                                />
-                                <p className="text-center text-sm text-gray-400 mt-4">
-                                    Don't have an account?{' '}
-                                    <button 
-                                        onClick={() => setModal('register')} 
-                                        className="font-medium text-eco-green hover:underline"
-                                    >
-                                        Sign up
-                                    </button>
-                                </p>
-                            </Modal>
-                        );
-                    case 'register':
-                         return (
-                            <Modal title="Create Your Account" onClose={closeModal}>
-                                <AuthForm 
-                                    mode="register" 
-                                    onAuthSuccess={handleAuthSuccess}
-                                    onNotify={handleNotify} 
-                                />
-                                <p className="text-center text-sm text-gray-400 mt-4">
-                                    Already have an account?{' '}
-                                    <button 
-                                        onClick={() => setModal('login')} 
-                                        className="font-medium text-eco-green hover:underline"
-                                    >
-                                        Sign in
-                                    </button>
-                                </p>
-                            </Modal>
-                        );
-                    case 'product':
-                        return (
-                            <ProductModal 
-                                barcode={modalData?.barcode}
-                                onGoBack={closeModal}
-                                auth={auth}
-                                onProductRequest={handleProductRequest}
-                            />
-                        );
-                    case 'search':
-                        return (
-                            <SearchResultsModal 
-                                query={modalData?.query}
-                                onGoBack={closeModal}
-                                onProductSelect={handleProductSelect}
-                            />
-                        );
-                    case 'request':
-                        return (
-                            <ProductRequestModal
-                                barcode={modalData?.barcode}
-                                auth={auth}
-                                onGoBack={closeModal}
-                                onNotify={handleNotify}
-                            />
-                        );
-                    default:
-                        return null;
+            // Search Input
+            let searchTimeout;
+            searchInput.addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    searchProducts(searchInput.value);
+                }, 300); // Debounce
+            });
+            // Hide search results when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!searchResultsContainer.contains(e.target) && e.target !== searchInput) {
+                    searchResultsContainer.classList.add('hidden');
                 }
-            };
+            });
+
+            // === INITIALIZATION ===
+            function initApp() {
+                // Check for saved auth token
+                const token = localStorage.getItem('authToken');
+                const user = localStorage.getItem('loggedInUser');
+                
+                if (token && user) {
+                    try {
+                        const parsedUser = JSON.parse(user);
+                        // Here you might want to validate the token against a /me endpoint
+                        // For now, we'll trust the stored data
+                        saveAuth(token, parsedUser);
+                    } catch (e) {
+                        clearAuth();
+                    }
+                }
+                
+                updateHeader();
+                navigate('home'); // Start on the home page
+            }
             
-            return (
-                <div className="min-h-screen flex flex-col">
-                    <Notification 
-                        message={notification.message}
-                        type={notification.type}
-                        onDismiss={() => setNotification({ message: null, type: 'error' })}
-                    />
-                    <Header 
-                        auth={auth}
-                        onNavClick={handleNavClick}
-                        onLogout={handleLogout}
-                    />
-                    <main className="flex-grow">
-                        {renderPage()}
-                        {renderModal()}
-                    </main>
-                    <Footer />
-                </div>
-            );
-        }
-
-        // --- Mount the App ---
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(
-            <StrictMode>
-                <App />
-            </StrictMode>
-        );
-
+            initApp();
+        });
     </script>
 </body>
 </html>
+
