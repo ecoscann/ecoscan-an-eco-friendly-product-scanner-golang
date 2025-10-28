@@ -141,6 +141,9 @@
                         <img id="product-img" src="https://placehold.co/400x400/eeeeee/cccccc?text=Product" alt="Product Image" class="w-full h-64 object-cover rounded-lg mb-4">
                         <h2 id="product-name" class="text-2xl font-bold mb-1">Product Name</h2>
                         <p id="product-brand" class="text-lg text-gray-600 mb-4">Brand Name</p>
+                        <h2 id="product-name" class="text-3xl font-bold mb-1"></h2>
+                         <p id="product-brand" class="text-lg text-gray-500 mb-2"></p>
+                        <p id="product-price" class="text-3xl font-bold text-green-600 mb-4"></p>
                         <p class="text-sm text-gray-500">Barcode: <span id="product-barcode"></span></p>
                     </div>
 
@@ -686,67 +689,127 @@
  * Renders the product modal with product data and alternatives.
 * @param {object} data - The entire API response object from your Go backend
  */
-function renderProductModal(data) { // <-- ADJUSTED: Changed signature to accept the whole response
-    const product = data.product; // <-- ADJUSTED: Get the product object from the response
-    const alternatives = data.alternatives || []; // <-- ADJUSTED: Get alternatives from the response
-
+/**
+ * Renders the product modal with product data and alternatives.
+ * @param {object} data - The entire API response object from your Go backend
+ */
+/**
+ * Renders the product modal with product data and alternatives.
+ * @param {object} data - The entire API response object from your Go backend
+ */
+function renderProductModal(data) {
+    const product = data.product;
+    const alternatives = data.alternatives || [];
     if (!product) return;
 
-    // Calculate score breakdown (this is still correct for the breakdown section)
-const packScore = getPackagingScore(product.packaging_material);
-const transScore = getTransportScore(product.manufacturing_location);
+    // --- Helper function (Pure JavaScript) ---
+    const $ = (selector) => document.getElementById(selector);
+
+    // Calculate score breakdown
+    const packScore = getPackagingScore(product.packaging_material);
+    const transScore = getTransportScore(product.manufacturing_location);
     const dispScore = getDisposalScore(product.disposal_method);
 
-    // Main product info
-    $('#product-img').src = product.image_url || 'https://placehold.co/400x400/eeeeee/cccccc?text=No+Image';
-    $('#product-name').textContent = product.name;
-$('#product-brand').textContent = product.brand_name;
-    $('#product-barcode').textContent = product.barcode;
-    
-    // --- START OF KEY ADJUSTMENT ---
-    
-    // Use the top-level score and rating directly from the API response
-    $('#product-score').textContent = data.score; // <-- ADJUSTED: Use data.score
-    $('#product-score-rating').textContent = data.score_rating; // <-- ADJUSTED: Use data.score_rating
-    
-    // The old frontend getScoreRating() function is no longer needed here.
-    
-    // --- END OF KEY ADJUSTMENT ---
+    // --- Main Product Info ---
+    $('product-img').src = product.image_url || 'https://placehold.co/400x400/eeeeee/cccccc?text=No+Image';
+    $('product-name').textContent = product.name;
+    $('product-brand').textContent = product.brand_name;
+    $('product-barcode').textContent = product.barcode;
 
-    // Score breakdown (this part is unchanged and still works)
-$('#product-packaging').textContent = `${packScore}/100`;
-$('#product-transport').textContent = `${transScore}/100`;
-    $('#product-disposal').textContent = `${dispScore}/100`;
-
-    // Alternatives
-    const altList = $('#product-alternatives-list');
-const altContainer = $('#product-alternatives-container');
-    altList.innerHTML = ''; 
-// Clear previous
-    if (alternatives && alternatives.length > 0) {
-        alternatives.forEach(alt => {
-            // Note: Your backend now calculates alt.Score, but your
-            // frontend card HTML doesn't display it. This is fine
-            // for now as you just wanted to fix the main product.
-    const altCard = ` 
-                <div class="flex-shrink-0 w-48 bg-gray-50 border border-gray-200 rounded-lg shadow-sm p-4 text-center">
-                    <img src="${alt.image_url || 'https://placehold.co/200x200/eeeeee/cccccc?text=No+Image'}" alt="${alt.name}" class="w-full h-24 object-cover rounded-md mb-3">
-                    <h5 class="font-semibold text-sm">${alt.name}</h5>
-                    <p class="text-xs text-gray-500 mb-2">${alt.brand_name}</p>
-                </div>
-    `;
-            altList.innerHTML += altCard;
-        });
-        altContainer.classList.remove('hidden');
-    } else {
-altContainer.classList.add('hidden');
+    // Main product price
+    const priceEl = $('product-price');
+    if (priceEl) {
+        priceEl.textContent = `$${product.price.toFixed(2)}`;
     }
 
-    // Show the modal (unchanged)
-productModal.classList.remove('hidden');
+    // Main score
+    $('product-score').textContent = data.score;
+    $('product-score-rating').textContent = data.score_rating;
+
+    // Score breakdown
+    $('product-packaging').textContent = `${packScore}/100`;
+    $('product-transport').textContent = `${transScore}/100`;
+    $('product-disposal').textContent = `${dispScore}/100`;
+
+    // --- Alternatives Section (The Fix) ---
+    const altList = $('product-alternatives-list');
+    const altContainer = $('product-alternatives-container');
+
+    // 1. Clear the list of old alternatives
+    altList.innerHTML = '';
+
+    // 2. Clone the list to remove all old event listeners
+    const newAltList = altList.cloneNode(false);
+    altList.parentNode.replaceChild(newAltList, altList);
+
+    if (alternatives && alternatives.length > 0) {
+        // 3. Add all the new alternative cards
+        alternatives.forEach(alt => {
+            newAltList.innerHTML += `
+<div class="flex-shrink-0 w-48 bg-gray-50 border border-gray-200 rounded-lg shadow-sm p-4 text-center cursor-pointer hover:bg-gray-100 transition-colors alt-card" data-barcode="${alt.barcode}">
+ <img src="${alt.image_url || 'https://placehold.co/200x200/eeeeee/cccccc?text=No+Image'}" alt="${alt.name}" class="w-full h-24 object-cover rounded-md mb-3" />
+ <h5 class="font-semibold text-sm">${alt.name}</h5>
+ <p class="text-xs text-gray-500 mb-2">${alt.brand_name}</p>
+ <div class="text-lg font-bold text-gray-800 mb-1">${alt.score}</div>
+ <p class="text-md font-semibold text-green-600">$${alt.price.toFixed(2)}</p>
+ </div>
+ `;
+        });
+
+        // 4. Add ONE SINGLE click listener to the entire list
+        newAltList.addEventListener('click', (e) => {
+            const card = e.target.closest('.alt-card');
+            if (card) {
+                const barcode = card.dataset.barcode;
+                
+                // --- THIS IS THE LOGIC YOU ASKED FOR ---
+                // 1. Close the current modal
+                closeModal(); // Assumes you have a closeModal() function
+                
+                // 2. Fetch the new product using its barcode
+                fetch(`https://ecoscan-an-eco-friendly-product-scanner.onrender.com/api/v1/products/barcode/${barcode}`)
+                    .then(res => {
+                        if (!res.ok) {
+                            throw new Error('Product not found');
+                        }
+                        return res.json();
+                    })
+                    .then(productData => {
+                        // 3. Open the modal again with the NEW data
+                        renderProductModal(productData);
+                    })
+                    .catch(err => {
+                        console.error("Error fetching alternative product:", err);
+                        // You should probably show an error message to the user here
+                    });
+            }
+        });
+
+        altContainer.classList.remove('hidden');
+    } else {
+        altContainer.classList.add('hidden');
+    }
+
+    // --- Show the modal ---
+    // (Assuming 'productModal' is a global variable holding the modal element)
+    productModal.classList.remove('hidden');
     productModal.querySelector('.modal-content').classList.add('scale-100');
 }
 
+        function closeModal() {
+    // This assumes your main modal element has the ID "productModal"
+    const modal = $('productModal'); 
+    
+    if (modal) {
+        modal.classList.add('hidden');
+        
+        // This resets the animation for the next time it opens
+        const modalContent = modal.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.classList.remove('scale-100');
+        }
+    }
+}
             /**
              * Renders the user's dashboard with their info.
              */
@@ -827,7 +890,7 @@ productModal.classList.remove('hidden');
                     }
                     
                     // NEW WAY (Example)
-const data = await res.json();
+const data = await response.json();
 renderProductModal(data); // <-- ADJUSTED: Pass the whole response object
                     scannerStatus.textContent = `Found: ${data.product.name}`;
 
@@ -868,11 +931,16 @@ renderProductModal(data); // <-- ADJUSTED: Pass the whole response object
             // === BARCODE SCANNER LOGIC ===
 
             const onScanSuccess = (decodedText, decodedResult) => {
-                // `decodedText` is the barcode
-                console.log(`Scan result: ${decodedText}`, decodedResult);
-                scannerStatus.textContent = `Found barcode: ${decodedText}`;
-                fetchProductByBarcode(decodedText);
-            };
+    console.log("Scan result:", decodedText, decodedResult);
+
+    // Show the raw result
+    scannerStatus.textContent = `Found barcode: ${decodedText}`;
+
+    // Pass it to your backend lookup
+    fetchProductByBarcode(decodedText);
+};
+
+
 
             const onScanFailure = (error) => {
                 // This will fire continuously, don't log it unless debugging
@@ -881,48 +949,61 @@ renderProductModal(data); // <-- ADJUSTED: Pass the whole response object
             };
 
             function startScanner() {
-                if (isScannerRunning) return;
-                
-                // Request camera permissions
-                Html5Qrcode.getCameras().then(cameras => {
-                    if (cameras && cameras.length) {
-                        // Use the 'environment' (back) camera if available
-                        const cameraId = cameras.find(c => c.label.toLowerCase().includes('back'))?.id || cameras[0].id;
-                        
-                        html5QrCode = new Html5Qrcode("reader");
-                        html5QrCode.start(
-                            cameraId,
-                            {
-                                fps: 10,
-                                qrbox: (viewfinderWidth, viewfinderHeight) => {
-                                    const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-                                    const qrboxSize = Math.floor(minEdge * 0.8);
-                                    return { width: qrboxSize, height: qrboxSize * 0.5 }; // Rectangular box for barcodes
-                                }
-                            },
-                            onScanSuccess,
-                            onScanFailure
-                        )
-                        .then(() => {
-                            isScannerRunning = true;
-                            startScannerBtn.classList.add('hidden');
-                            scannerStatus.textContent = "Scanning...";
-                            reader.style.borderColor = "#4CAF50";
-                        })
-                        .catch(err => {
-                            console.error("Failed to start scanner:", err);
-                            scannerStatus.textContent = `Error: ${err}. Try refreshing.`;
-                            reader.style.borderColor = "#ef4444";
-                        });
-                    } else {
-                        scannerStatus.textContent = "No cameras found on this device.";
-                    }
-                }).catch(err => {
-                    console.error("Error getting cameras:", err);
-                    scannerStatus.textContent = "Camera permission denied or error.";
-                    startScannerBtn.classList.remove('hidden');
-                });
+    if (isScannerRunning) return;
+
+    Html5Qrcode.getCameras().then(cameras => {
+        if (cameras && cameras.length) {
+            console.log("Available cameras:", cameras);
+
+            // Prefer wide/ultra-wide if available
+            let preferredCam = cameras.find(c =>
+                c.label.toLowerCase().includes("wide")
+            );
+
+            // If no wide, prefer back camera
+            if (!preferredCam) {
+                preferredCam = cameras.find(c =>
+                    c.label.toLowerCase().includes("back")
+                );
             }
+
+            // Fallback to the first camera
+            const cameraId = preferredCam?.id || cameras[0].id;
+
+            html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start(
+                cameraId,
+                {
+                    fps: 10,
+                    qrbox: (viewfinderWidth, viewfinderHeight) => {
+                        const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                        const qrboxSize = Math.floor(minEdge * 0.8);
+                        return { width: qrboxSize, height: qrboxSize * 0.5 };
+                    }
+                },
+                onScanSuccess,
+                onScanFailure
+            )
+            .then(() => {
+                isScannerRunning = true;
+                startScannerBtn.classList.add('hidden');
+                scannerStatus.textContent = "Scanning...";
+                reader.style.borderColor = "#4CAF50";
+            })
+            .catch(err => {
+                console.error("Failed to start scanner:", err);
+                scannerStatus.textContent = `Error: ${err}. Try refreshing.`;
+                reader.style.borderColor = "#ef4444";
+            });
+        } else {
+            scannerStatus.textContent = "No cameras found on this device.";
+        }
+    }).catch(err => {
+        console.error("Error getting cameras:", err);
+        scannerStatus.textContent = "Camera permission denied or error.";
+        startScannerBtn.classList.remove('hidden');
+    });
+}
 
             function stopScanner() {
                 if (!html5QrCode || !isScannerRunning) return;
