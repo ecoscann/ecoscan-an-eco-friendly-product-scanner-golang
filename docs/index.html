@@ -383,7 +383,14 @@
                 <form id="request-form" class="space-y-6">
                     <div>
                         <label for="request-barcode" class="block text-sm font-medium text-gray-700 mb-1">Barcode</label>
+
+                        <div id="request-scanner-region" class="w-full rounded-lg overflow-hidden mb-4 hidden" style="width: 100%;"></div>
+                        
                         <input type="text" id="request-barcode" name="barcode" class="form-input" placeholder="Scan or type barcode" required>
+                        
+                        <button id="start-request-scan-btn" type="button" class="btn btn-dark w-full mt-3">
+                            <i class="fas fa-camera mr-2"></i> Scan Barcode to Fill
+                        </button>
                     </div>
                     <div>
                         <label for="request-name" class="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
@@ -507,9 +514,94 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
 
+            function startRequestScanner() {
+            // Ensure no other scanner is running
+            if (requestScanner) {
+                stopRequestScanner();
+            }
+
+            // Create a new scanner instance attached to our new video region
+            requestScanner = new Html5Qrcode("request-scanner-region");
+            requestScannerRegion.classList.remove('hidden');
+            startRequestScanBtn.textContent = 'Starting Camera...';
+            startRequestScanBtn.disabled = true;
+
+            const onScanSuccess = (decodedText, decodedResult) => {
+                // --- THIS IS THE KEY PART ---
+                // When a barcode is found:
+                
+                // 1. Put the barcode text into the input field
+                if (requestBarcode) {
+                    requestBarcode.value = decodedText;
+                }
+                
+                // 2. Stop this scanner
+                stopRequestScanner();
+                
+                // 3. (Optional) Show a success message
+                showMessage("Barcode scanned successfully!");
+            };
+
+            const onScanFailure = (error) => {
+                // We can ignore failures (e.g., when it doesn't find a code)
+            };
+
+            // Scanner configuration
+            const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+
+            // Request camera permissions and start
+            Html5Qrcode.getCameras().then(cameras => {
+                if (cameras && cameras.length) {
+                    requestScanner.start(
+                        { facingMode: "environment" }, // Use the back camera
+                        config,
+                        onScanSuccess,
+                        onScanFailure
+                    ).then(() => {
+                        startRequestScanBtn.textContent = 'Scanner Active... (Point at Barcode)';
+                    }).catch(err => {
+                        console.error("Error starting request scanner: ", err);
+                        stopRequestScanner();
+                        showMessage("Could not start camera.", true);
+                    });
+                } else {
+                    stopRequestScanner();
+                    showMessage("No camera found.", true);
+                }
+            }).catch(err => {
+                console.error("Error getting cameras: ", err);
+                stopRequestScanner();
+                showMessage("Could not access camera. Please grant permission.", true);
+            });
+        }
+
+        /**
+         * Stops the scanner on the Request Product page.
+         */
+        function stopRequestScanner() {
+            if (requestScanner) {
+                requestScanner.stop().then(() => {
+                    console.log("Request scanner stopped.");
+                }).catch(err => {
+                    console.error("Error stopping request scanner: ", err);
+                }).finally(() => {
+                    requestScanner = null;
+                    if (requestScannerRegion) {
+                        requestScannerRegion.classList.add('hidden');
+                        requestScannerRegion.innerHTML = ""; // Clear the video feed
+                    }
+                    if (startRequestScanBtn) {
+                        startRequestScanBtn.textContent = 'Scan Barcode to Fill';
+                        startRequestScanBtn.disabled = false;
+                    }
+                });
+            }
+        }
+
             // === CONFIG ===
             const API_BASE_URL = "https://ecoscan-an-eco-friendly-product-scanner.onrender.com"; // IMPORTANT: Change this to your live backend URL
             let html5QrCode; // Scanner instance
+            let requestScanner = null; // Scanner instance for the request page
             let isScannerRunning = false;
             
             // === STATE ===
@@ -550,6 +642,9 @@
             const loginForm = $('#login-form');
             const registerForm = $('#register-form');
             const requestForm = $('#request-form');
+            const startRequestScanBtn = $('#start-request-scan-btn');
+const requestScannerRegion = $('#request-scanner-region');
+const requestBarcode = $('#request-barcode');
             
             // Home Page Selectors
             const startScannerBtn = $('#start-scanner-btn');
