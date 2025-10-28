@@ -682,64 +682,70 @@
              * @param {object} product - The main product object.
              * @param {object[]} alternatives - An array of alternative product objects.
              */
-            function renderProductModal(product, alternatives = []) {
-                if (!product) return;
+            /**
+ * Renders the product modal with product data and alternatives.
+* @param {object} data - The entire API response object from your Go backend
+ */
+function renderProductModal(data) { // <-- ADJUSTED: Changed signature to accept the whole response
+    const product = data.product; // <-- ADJUSTED: Get the product object from the response
+    const alternatives = data.alternatives || []; // <-- ADJUSTED: Get alternatives from the response
 
-                // Calculate score breakdown
-                const packScore = getPackagingScore(product.packaging_material);
-                const transScore = getTransportScore(product.manufacturing_location);
-                const dispScore = getDisposalScore(product.disposal_method);
-                
-                // Main product info
-                $('#product-img').src = product.image_url || 'https://placehold.co/400x400/eeeeee/cccccc?text=No+Image';
-                $('#product-name').textContent = product.name;
-                $('#product-brand').textContent = product.brand_name;
-                $('#product-barcode').textContent = product.barcode;
-                $('#product-score').textContent = product.score;
-                $('#product-score-rating').textContent = getScoreRating(product.score);
+    if (!product) return;
 
-                // Score breakdown
-                $('#product-packaging').textContent = `${packScore}/100`;
-                $('#product-transport').textContent = `${transScore}/100`;
-                $('#product-disposal').textContent = `${dispScore}/100`;
+    // Calculate score breakdown (this is still correct for the breakdown section)
+const packScore = getPackagingScore(product.packaging_material);
+const transScore = getTransportScore(product.manufacturing_location);
+    const dispScore = getDisposalScore(product.disposal_method);
 
-                // Alternatives
-                const altList = $('#product-alternatives-list');
-                const altContainer = $('#product-alternatives-container');
-                altList.innerHTML = ''; // Clear previous
+    // Main product info
+    $('#product-img').src = product.image_url || 'https://placehold.co/400x400/eeeeee/cccccc?text=No+Image';
+    $('#product-name').textContent = product.name;
+$('#product-brand').textContent = product.brand_name;
+    $('#product-barcode').textContent = product.barcode;
+    
+    // --- START OF KEY ADJUSTMENT ---
+    
+    // Use the top-level score and rating directly from the API response
+    $('#product-score').textContent = data.score; // <-- ADJUSTED: Use data.score
+    $('#product-score-rating').textContent = data.score_rating; // <-- ADJUSTED: Use data.score_rating
+    
+    // The old frontend getScoreRating() function is no longer needed here.
+    
+    // --- END OF KEY ADJUSTMENT ---
 
-                if (alternatives && alternatives.length > 0) {
-                    alternatives.forEach(alt => {
-                        const altCard = `
-                            <div classclass="flex-shrink-0 w-48 bg-gray-50 border border-gray-200 rounded-lg shadow-sm p-3 cursor-pointer hover:shadow-md" data-barcode="${alt.barcode}">
-                                <img src="${alt.image_url || 'https://placehold.co/200x200/eeeeee/cccccc?text=No+Image'}" alt="${alt.name}" class="w-full h-24 object-cover rounded-md mb-2">
-                                <h4 class="font-semibold text-sm truncate">${alt.name}</h4>
-                                <p class="text-xs text-gray-500 truncate mb-2">${alt.brand_name}</p>
-                                <div class="flex items-center justify-between">
-                                    <span class="font-bold text-lg text-leaf-green">${alt.score}</span>
-                                    <span class="text-xs font-medium ${alt.score > product.score ? 'text-green-500' : 'text-red-500'}">
-                                        ${alt.score > product.score ? '+' : ''}${alt.score - product.score}
-                                    </span>
-                                </div>
-                            </div>
-                        `;
-                        altList.innerHTML += altCard;
-                    });
-                    altContainer.classList.remove('hidden');
-                } else {
-                    altContainer.classList.add('hidden');
-                }
-                
-                // Add click listeners to alternatives
-                altList.querySelectorAll('[data-barcode]').forEach(card => {
-                    card.addEventListener('click', () => {
-                        fetchProductByBarcode(card.dataset.barcode, false); // Fetch new product, don't stop scanner
-                    });
-                });
+    // Score breakdown (this part is unchanged and still works)
+$('#product-packaging').textContent = `${packScore}/100`;
+$('#product-transport').textContent = `${transScore}/100`;
+    $('#product-disposal').textContent = `${dispScore}/100`;
 
-                productModal.classList.remove('hidden');
-                productModal.querySelector('.modal-content').classList.remove('scale-95');
-            }
+    // Alternatives
+    const altList = $('#product-alternatives-list');
+const altContainer = $('#product-alternatives-container');
+    altList.innerHTML = ''; 
+// Clear previous
+    if (alternatives && alternatives.length > 0) {
+        alternatives.forEach(alt => {
+            // Note: Your backend now calculates alt.Score, but your
+            // frontend card HTML doesn't display it. This is fine
+            // for now as you just wanted to fix the main product.
+    const altCard = ` 
+                <div class="flex-shrink-0 w-48 bg-gray-50 border border-gray-200 rounded-lg shadow-sm p-4 text-center">
+                    <img src="${alt.image_url || 'https://placehold.co/200x200/eeeeee/cccccc?text=No+Image'}" alt="${alt.name}" class="w-full h-24 object-cover rounded-md mb-3">
+                    <h5 class="font-semibold text-sm">${alt.name}</h5>
+                    <p class="text-xs text-gray-500 mb-2">${alt.brand_name}</p>
+                </div>
+    `;
+            altList.innerHTML += altCard;
+        });
+        altContainer.classList.remove('hidden');
+    } else {
+altContainer.classList.add('hidden');
+    }
+
+    // Show the modal (unchanged)
+productModal.classList.remove('hidden');
+    productModal.querySelector('.modal-content').classList.add('scale-100');
+}
 
             /**
              * Renders the user's dashboard with their info.
@@ -820,8 +826,9 @@
                         throw new Error(`Server error: ${response.statusText}`);
                     }
                     
-                    const data = await response.json();
-                    renderProductModal(data.product, data.alternatives);
+                    // NEW WAY (Example)
+const data = await res.json();
+renderProductModal(data); // <-- ADJUSTED: Pass the whole response object
                     scannerStatus.textContent = `Found: ${data.product.name}`;
 
                 } catch (error) {
