@@ -101,7 +101,7 @@ func (h *ProductHandler) ReqProduct(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// helper: 안전한 userID extraction
+// helper:  userID extraction
 func extractUserIDFromContext(ctx context.Context) (int64, bool) {
 	val := ctx.Value("userID")
 	if val == nil {
