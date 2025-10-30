@@ -17,25 +17,26 @@ func (h *ProductHandler) SearchProductsByName(w http.ResponseWriter, r *http.Req
 		http.Error(w, `{"message": "Query parameter 'q' is required"}`, http.StatusBadRequest)
 		return
 	}
-	// Convert search query to lowercase *once*
 	searchQueryLower := strings.ToLower(query)
 
 	var results []repo.Product
-	similarityThreshold := 0.3 
+	similarityThreshold := 0.3
 	maxResults := 10
 
-	
+
 	dbQuery := `
-		SELECT *
+		SELECT 
+			id, barcode, name, brand_name, category, sub_category, 
+			image_url, price, packaging_material, manufacturing_location, 
+			disposal_method, COALESCE(score, 0) as score 
 		FROM products
 		WHERE similarity(lower(name), $1) > $2 OR lower(name) = $1
 		ORDER BY
-			(lower(name) = $1) DESC,  -- 1. Exact matches first
-			similarity(lower(name), $1) DESC -- 2. Similar matches next
+			(lower(name) = $1) DESC,
+			similarity(lower(name), $1) DESC
 		LIMIT $3
 	`
 
-	
 	
 	err := h.DB.Select(&results, dbQuery, searchQueryLower, similarityThreshold, maxResults)
 
@@ -48,7 +49,7 @@ func (h *ProductHandler) SearchProductsByName(w http.ResponseWriter, r *http.Req
 
 	if len(results) > 0 && strings.ToLower(results[0].Name) == searchQueryLower {
 		log.Printf("Exact match found for '%s', returning only that.", query)
-		results = []repo.Product{results[0]} // Only return the exact match
+		results = []repo.Product{results[0]}
 	} else if len(results) == 0 {
 		log.Printf("No products found matching query: '%s'", query)
 	} else {
