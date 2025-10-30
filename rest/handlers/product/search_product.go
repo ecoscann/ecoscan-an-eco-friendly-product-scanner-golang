@@ -50,7 +50,7 @@ func (h *ProductHandler) SearchProductsByName(w http.ResponseWriter, r *http.Req
 	if len(results) > 0 && strings.ToLower(results[0].Name) == searchQueryLower {
 		log.Printf("Exact match found for '%s', returning only that.", query)
         // If strict exact match is needed and ONLY that one should be returned:
-        // results = []repo.Product{results[0]}
+        results = []repo.Product{results[0]}
 	} else if len(results) == 0 {
         log.Printf("No products found matching query: '%s'", query)
     } else {
