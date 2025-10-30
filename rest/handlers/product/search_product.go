@@ -7,9 +7,7 @@ import (
 	"strings"
 
 	"ecoscan.com/repo"
-	
 )
-
 
 func (h *ProductHandler) SearchProductsByName(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -19,45 +17,44 @@ func (h *ProductHandler) SearchProductsByName(w http.ResponseWriter, r *http.Req
 		http.Error(w, `{"message": "Query parameter 'q' is required"}`, http.StatusBadRequest)
 		return
 	}
-	// conver it to lowercase
+	
 	searchQueryLower := strings.ToLower(query)
 
 	var results []repo.Product
-	// threshold 0.3 : means 0.3 is better for spelling mistakes
 	similarityThreshold := 0.3
-	maxResults := 10 
+	maxResults := 10
 
 	
 	dbQuery := `
 		SELECT *
 		FROM products
-		WHERE similarity(name, $1) > $2 OR lower(name) = $3
+		WHERE similarity(lower(name), $1) > $2 OR lower(name) = $1
 		ORDER BY
-			(lower(name) = $3) DESC,  -- Exact match (case-insensitive) gets highest priority (true = 1, false = 0)
-			similarity(name, $1) DESC -- Then order by similarity score
-		LIMIT $4
+			(lower(name) = $1) DESC,  
+			similarity(lower(name), $1) DESC 
+		LIMIT $3
 	`
 
-	err := h.DB.Select(&results, dbQuery, query, similarityThreshold, searchQueryLower, maxResults) // sending query and searchlower both
+	
+	err := h.DB.Select(&results, dbQuery, searchQueryLower, similarityThreshold, maxResults)
 
 	if err != nil {
-		log.Printf("ERROR searching products by name '%s': %v", query, err)
+		
+		log.Printf("FATAL ERROR searching products by name '%s': %v", query, err)
 		http.Error(w, `{"message": "Could not perform search"}`, http.StatusInternalServerError)
 		return
 	}
 
-	// if exact match found, only exact match will send even there is more results
 	if len(results) > 0 && strings.ToLower(results[0].Name) == searchQueryLower {
 		log.Printf("Exact match found for '%s', returning only that.", query)
-        // If strict exact match is needed and ONLY that one should be returned:
-        results = []repo.Product{results[0]}
+		
+		results = []repo.Product{results[0]}
 	} else if len(results) == 0 {
-        log.Printf("No products found matching query: '%s'", query)
-    } else {
-         log.Printf("Returning %d fuzzy matches for query: '%s'", len(results), query)
-    }
-
+		log.Printf("No products found matching query: '%s'", query)
+	} else {
+		log.Printf("Returning %d fuzzy matches for query: '%s'", len(results), query)
+	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(results) 
+	json.NewEncoder(w).Encode(results)
 }
