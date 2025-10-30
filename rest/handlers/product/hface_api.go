@@ -14,14 +14,18 @@ import (
     "ecoscan.com/repo"
 )
 
-// Pre-written fallback messages (casual Bengali with 🌱).
-// Use %s placeholder for product name.
-var fallbackMessages = []string{
-    "%s বেছে নিয়ে তুমি প্রায় ৩০%% বর্জ্য কমাতে সাহায্য করছ 🌱 ছোট্ট পদক্ষেপ, বড় পরিবর্তন!",
-    "চমৎকার! %s নেওয়ায় পরিবেশ আরও সবুজ হচ্ছে 🌱",
-    "%s কিনে তুমি প্রায় ২৫%% বর্জ্য কমাচ্ছো 🌱 keep going!",
-    "প্রকৃতি তোমার পাশে হাসছে 🌱 %s এর মতো sustainable choice নিলে ভবিষ্যৎ উজ্জ্বল হয়।",
-    "%s বেছে নিয়ে তুমি পৃথিবীকে একটু হালকা করছ 🌱",
+// Fallback messages for low-score products (encourage alternatives)
+var lowScoreFallbacks = []string{
+    "%s নিলে কিছুটা বর্জ্য কমবে 🌱 তবে আরেকটা greener option নিলে প্রায় ২৫%% বেশি save করতে পারবে!",
+    "হয়তো %s এখনকার জন্য ঠিক আছে, কিন্তু higher eco score product নিলে পরিবেশে আরও বড় প্রভাব ফেলতে পারবে 🌱",
+    "%s কিনে তুমি কিছুটা সাহায্য করছ, কিন্তু আরও ভালো বিকল্প বেছে নিলে waste reduction দ্বিগুণ হতে পারে 🌱",
+}
+
+// Fallback messages for good-score products (celebrate choice)
+var goodScoreFallbacks = []string{
+    "চমৎকার! %s বেছে নিয়ে তুমি প্রায় ৪০%% বর্জ্য কমাচ্ছো 🌱 keep it up!",
+    "%s নেওয়ায় পরিবেশ আরও সবুজ হচ্ছে 🌱 তোমার এই চয়েস সত্যিই অনুপ্রেরণাদায়ক!",
+    "%s কিনে তুমি পৃথিবীকে একটু হালকা করছ 🌱 sustainable choice rocks!",
 }
 
 // generateMotivationalMessage calls OpenRouter (GPT‑4o) to generate
@@ -29,7 +33,7 @@ var fallbackMessages = []string{
 func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score int) string {
     apiKey := os.Getenv("OPENROUTER_API_KEY")
     if apiKey == "" {
-        return randomFallback(product.Name)
+        return randomScoreAwareFallback(product.Name, score)
     }
 
     var prompt string
@@ -80,7 +84,7 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
     resp, err := client.Do(req)
     if err != nil {
         log.Printf("OpenRouter API error: %v", err)
-        return randomFallback(product.Name)
+        return randomScoreAwareFallback(product.Name, score)
     }
     defer resp.Body.Close()
 
@@ -101,12 +105,16 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
         }
     }
 
-    return randomFallback(product.Name)
+    return randomScoreAwareFallback(product.Name, score)
 }
 
-// randomFallback returns a random pre-written Bengali message with product name
-func randomFallback(productName string) string {
+// randomScoreAwareFallback picks a fallback message based on eco score
+func randomScoreAwareFallback(productName string, score int) string {
     rand.Seed(time.Now().UnixNano())
-    msg := fallbackMessages[rand.Intn(len(fallbackMessages))]
+    if score < 50 {
+        msg := lowScoreFallbacks[rand.Intn(len(lowScoreFallbacks))]
+        return fmt.Sprintf(msg, productName)
+    }
+    msg := goodScoreFallbacks[rand.Intn(len(goodScoreFallbacks))]
     return fmt.Sprintf(msg, productName)
 }
