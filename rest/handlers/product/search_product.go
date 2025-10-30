@@ -17,11 +17,11 @@ func (h *ProductHandler) SearchProductsByName(w http.ResponseWriter, r *http.Req
 		http.Error(w, `{"message": "Query parameter 'q' is required"}`, http.StatusBadRequest)
 		return
 	}
-	
+	// Convert search query to lowercase *once*
 	searchQueryLower := strings.ToLower(query)
 
 	var results []repo.Product
-	similarityThreshold := 0.3
+	similarityThreshold := 0.3 
 	maxResults := 10
 
 	
@@ -30,25 +30,25 @@ func (h *ProductHandler) SearchProductsByName(w http.ResponseWriter, r *http.Req
 		FROM products
 		WHERE similarity(lower(name), $1) > $2 OR lower(name) = $1
 		ORDER BY
-			(lower(name) = $1) DESC,  
-			similarity(lower(name), $1) DESC 
+			(lower(name) = $1) DESC,  -- 1. Exact matches first
+			similarity(lower(name), $1) DESC -- 2. Similar matches next
 		LIMIT $3
 	`
 
+	
 	
 	err := h.DB.Select(&results, dbQuery, searchQueryLower, similarityThreshold, maxResults)
 
 	if err != nil {
 		
-		log.Printf("FATAL ERROR searching products by name '%s': %v", query, err)
+		log.Printf("FATAL SQL ERROR searching '%s': %v", query, err)
 		http.Error(w, `{"message": "Could not perform search"}`, http.StatusInternalServerError)
 		return
 	}
 
 	if len(results) > 0 && strings.ToLower(results[0].Name) == searchQueryLower {
 		log.Printf("Exact match found for '%s', returning only that.", query)
-		
-		results = []repo.Product{results[0]}
+		results = []repo.Product{results[0]} // Only return the exact match
 	} else if len(results) == 0 {
 		log.Printf("No products found matching query: '%s'", query)
 	} else {

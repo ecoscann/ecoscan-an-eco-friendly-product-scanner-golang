@@ -1304,6 +1304,240 @@ renderProductModal(data); // <-- ADJUSTED: Pass the whole response object
 
             // === SEARCH LOGIC ===
             // (Your existing search logic code probably starts here)
+            // === CONSTANTS & API URL ===
+          
+            // === UI ELEMENT SELECTORS ===
+           
+
+            // === HELPER FUNCTIONS (Modals & UI) ===
+            function showLoading(show) {
+                loadingSpinner.classList.toggle('hidden', !show);
+            }
+
+            function showGlobalMessage(message) {
+                messageText.textContent = message;
+                messageModal.classList.remove('hidden');
+            }
+
+            function closeGlobalMessage() {
+                messageModal.classList.add('hidden');
+            }
+
+            function showProductModal(productData) {
+                // Populate the modal with data from the API response
+                const { product, score, score_rating, alternatives } = productData;
+
+                document.getElementById('product-img').src = product.image_url || 'https://placehold.co/400x400/eeeeee/cccccc?text=No+Image';
+                document.getElementById('product-name').textContent = product.name;
+                document.getElementById('product-brand').textContent = product.brand_name || 'N/A';
+                document.getElementById('product-price').textContent = product.price ? `$${product.price.toFixed(2)}` : 'Price N/A';
+                document.getElementById('product-barcode').textContent = product.barcode;
+                
+                document.getElementById('product-score').textContent = score || 0;
+                document.getElementById('product-score-rating').textContent = score_rating || 'Not Rated';
+
+                // Score Breakdown
+                document.getElementById('product-packaging').textContent = product.packaging_material || 'N/A';
+                document.getElementById('product-transport').textContent = product.manufacturing_location || 'N/A';
+                document.getElementById('product-disposal').textContent = product.disposal_method || 'N/A';
+
+                // Populate Alternatives
+                const alternativesList = document.getElementById('product-alternatives-list');
+                alternativesList.innerHTML = ''; // Clear old alternatives
+                
+                if (alternatives && alternatives.length > 0) {
+                    document.getElementById('product-alternatives-container').classList.remove('hidden');
+                    alternatives.forEach(alt => {
+                        const altCard = `
+                            <div class="flex-shrink-0 w-48 bg-gray-50 border border-gray-200 rounded-lg p-3 shadow-sm text-left">
+                                <img src="${alt.image_url || 'https://placehold.co/200x200/eeeeee/cccccc?text=Alt'}" class="w-full h-24 object-cover rounded mb-2">
+                                <p class="font-semibold text-sm truncate">${alt.name}</p>
+                                <p class="text-xs text-gray-500 truncate">${alt.brand_name || 'N/A'}</p>
+                                <p class="text-lg font-bold text-leaf-green mt-1">$${alt.price ? alt.price.toFixed(2) : 'N/A'}</p>
+                            </div>
+                        `;
+                        alternativesList.innerHTML += altCard;
+                    });
+                } else {
+                    document.getElementById('product-alternatives-container').classList.add('hidden');
+                }
+
+                // Show the modal
+                productModal.classList.remove('hidden');
+                setTimeout(() => productModal.querySelector('.modal-content').classList.remove('scale-95'), 10);
+            }
+
+            function closeProductModal() {
+                productModal.querySelector('.modal-content').classList.add('scale-95');
+                productModal.classList.add('hidden');
+            }
+
+            // === CORE SEARCH LOGIC ===
+
+            // --- 1. Search by Name ---
+            async function handleNameSearch(query) {
+                if (query.length < 2) {
+                    searchResultsContainer.classList.add('hidden');
+                    return;
+                }
+                showLoading(true);
+                searchResultsList.innerHTML = ''; // Clear previous results
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/v1/products/search?q=${encodeURIComponent(query)}`);
+                    if (!response.ok) {
+                        throw new Error(`Server error: ${response.statusText}`);
+                    }
+                    const products = await response.json();
+
+                    if (!products || products.length === 0) {
+                        searchResultsList.innerHTML = '<li class="p-3 text-gray-500">No products found.</li>';
+                    } else {
+                        products.forEach(product => {
+                            const li = document.createElement('li');
+                            li.className = 'p-3 hover:bg-gray-100 cursor-pointer flex items-center space-x-3';
+                            li.innerHTML = `
+                                <img src="${product.image_url || 'https://placehold.co/40x40/eee/ccc?text=?'}" class="w-10 h-10 rounded-md object-cover">
+                                <div>
+                                    <p class="font-medium">${product.name}</p>
+                                    <p class="text-sm text-gray-500">${product.brand_name || 'N/A'}</p>
+                                </div>`;
+                            li.addEventListener('click', () => {
+                                // When a search result is clicked, fetch its full details by barcode
+                                handleBarcodeSearch(product.barcode);
+                                searchResultsContainer.classList.add('hidden');
+                                searchInput.value = '';
+                            });
+                            searchResultsList.appendChild(li);
+                        });
+                    }
+                    searchResultsContainer.classList.remove('hidden');
+
+                } catch (error) {
+                    console.error('Name search error:', error);
+                    showGlobalMessage(`Search Error: ${error.message}`); // <-- THIS SHOWS THE "SEARCH ERROR"
+                } finally {
+                    showLoading(false);
+                }
+            }
+
+            // --- 2. Search by Barcode (Scanner or Click) ---
+            async function handleBarcodeSearch(barcode) {
+                showLoading(true);
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/v1/products/barcode/${barcode}`);
+                    
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            throw new Error('Product not found in our database. You can help by adding it!');
+                        } else {
+                            throw new Error(`Server Error: ${response.status}`);
+                        }
+                    }
+                    
+                    const productData = await response.json();
+                    showProductModal(productData);
+
+                } catch (error) {
+                    console.error('Barcode search error:', error);
+                    showGlobalMessage(error.message || 'Error finding product.'); // <-- THIS SHOWS THE "SEARCH ERROR"
+                } finally {
+                    showLoading(false);
+                }
+            }
+
+            // === EVENT LISTENERS ===
+
+            // Search bar listener (waits for "Enter" key)
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault(); // Stop form submission
+                    handleNameSearch(searchInput.value);
+                }
+            });
+
+            // Modal close buttons
+            messageCloseBtn.addEventListener('click', closeGlobalMessage);
+            productModalClose.addEventListener('click', closeProductModal);
+
+            // Hide search results if clicked outside
+            document.addEventListener('click', (e) => {
+                if (!searchResultsContainer.contains(e.target) && e.target.id !== 'search-input') {
+                    searchResultsContainer.classList.add('hidden');
+                }
+            });
+
+            // --- Barcode Scanner Initialization ---
+            try {
+                html5QrCode = new Html5Qrcode("reader");
+                const config = { 
+                    fps: 10, 
+                    qrbox: { width: 250, height: 150 },
+                    rememberLastUsedCamera: true,
+                    supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+                };
+
+                const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+                    // This function is called on successful scan
+                    console.log(`Scan successful: ${decodedText}`, decodedResult);
+                    scannerStatus.textContent = `Found barcode: ${decodedText}`;
+                    showLoading(true); // Show spinner while fetching
+                    
+                    // Stop the scanner
+                    html5QrCode.stop().then(() => {
+                        console.log("Scanner stopped.");
+                        // Fetch data using the scanned barcode
+                        handleBarcodeSearch(decodedText);
+                    }).catch(err => {
+                        console.error("Error stopping scanner:", err);
+                        handleBarcodeSearch(decodedText); // Try fetching anyway
+                    });
+                };
+
+                const qrCodeErrorCallback = (errorMessage) => {
+                    // This is called for non-critical errors (e.g., no barcode in frame)
+                    // We can ignore most of these.
+                    // console.warn(`QR Error: ${errorMessage}`);
+                };
+
+                // Start the camera scanner
+                html5QrCode.start(
+                    { facingMode: "environment" }, // Use the back camera
+                    config,
+                    qrCodeSuccessCallback,
+                    qrCodeErrorCallback
+                ).then(() => {
+                    scannerStatus.textContent = "Scanner is active. Point at a barcode.";
+                }).catch(err => {
+                    // This is called for critical errors (e.g., no camera, permission denied)
+                    scannerStatus.textContent = `Error: ${err.message}`;
+                    console.error("Failed to start scanner:", err);
+                    if (err.name === "NotAllowedError") {
+                        scannerStatus.textContent = "Camera permission was denied.";
+                    } else {
+                        scannerStatus.textContent = "Could not start scanner. Please ensure you have a camera and have given permission.";
+                    }
+                    startScannerBtn.classList.remove('hidden'); // Show a manual start button as fallback
+                });
+
+                // Manual start button (if initial start fails)
+                startScannerBtn.addEventListener('click', () => {
+                    if (html5QrCode.getState() !== Html5QrcodeScannerState.SCANNING) {
+                        html5QrCode.start(
+                            { facingMode: "environment" },
+                            config,
+                            qrCodeSuccessCallback,
+                            qrCodeErrorCallback
+                        ).catch(err => {
+                            scannerStatus.textContent = `Error: ${err.message}`;
+                        });
+                    }
+                });
+
+            } catch (ex) {
+                console.error("html5QrCode exception:", ex);
+                scannerStatus.textContent = "Failed to initialize scanner library.";
+            }
 
             // === INITIALIZATION ===
             function initApp() {
