@@ -1,6 +1,6 @@
 package product
 
-import (
+/* import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
@@ -69,3 +69,4 @@ func(h *ProductHandler) generateMotivationalMessage(product repo.Product, score 
 
 	return "Thanks for choosing sustainable products — together we reduce waste!"
 }
+ */

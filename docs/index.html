@@ -161,6 +161,8 @@
                                 <span class="text-gray-700"><i class="fas fa-box-open mr-2 text-leaf-green"></i>Packaging</span>
                                 <span id="product-packaging" class="font-bold"></span>
                             </div>
+                            
+
                             <div class="flex justify-between items-center">
                                 <span class="text-gray-700"><i class="fas fa-truck mr-2 text-leaf-green"></i>Transport</span>
                                 <span id="product-transport" class="font-bold"></span>
@@ -170,8 +172,19 @@
                                 <span id="product-disposal" class="font-bold"></span>
                             </div>
                         </div>
+                        <!-- Motivational Message -->
+                            <div id="product-message-container"
+                                class="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg hidden">
+                                <p id="product-message" class="text-green-800 font-medium text-center"></p>
+                            </div>
+                            </div>
                     </div>
                 </div>
+
+                <!-- Right Column: Score & Details -->
+
+
+  
 
                 <!-- Alternatives Section -->
                 <div id="product-alternatives-container" class="mt-8 pt-6 border-t border-gray-200">
@@ -638,10 +651,6 @@
             // Product Modal Selectors
             const productModal = $('#product-modal');
             const productModalClose = $('#product-modal-close');
-            <!-- Motivational Message -->
-<div id="product-message-container" class="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg hidden">
-  <p id="product-message" class="text-green-800 font-medium text-center"></p>
-</div>
 
 
             // Form Selectors
@@ -816,6 +825,18 @@ function renderProductModal(data) {
     $('product-name').textContent = product.name;
     $('product-brand').textContent = product.brand_name;
     $('product-barcode').textContent = product.barcode;
+
+    // ai msg
+    const messageContainer = document.getElementById('product-message-container');
+const messageEl = document.getElementById('product-message');
+
+if (data.message && data.message.trim() !== "") {
+    messageEl.textContent = data.message;
+    messageContainer.classList.remove('hidden');
+} else {
+    messageContainer.classList.add('hidden');
+}
+
 
     // Main product price
     const priceEl = $('product-price');
