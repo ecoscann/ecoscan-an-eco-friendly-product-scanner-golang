@@ -41,8 +41,8 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
         prompt = fmt.Sprintf(
             "User is considering buying %s by %s. Eco Score: %d (low). "+
                 "Write a short, casual and friendly eco‑motivational message in Bengali (max 2 sentences). "+
-                "Make sure the message feels natural, not formal — like a friend talking. "+
-                "Directly mention the product name in a fun way, so it feels personal. "+
+                "Make sure the message feels natural, not formal  "+
+                "Directly mention the product name in a fun way, so it feels personal and tell something related to the product "+
                 "Encourage them to try a greener alternative, but keep it supportive and light. "+
                 "Also mention a realistic percentage of waste saved or environmental benefit, and vary it each time so it feels fresh. "+
                 "Always include an eco emoji 🌱.",
@@ -52,8 +52,8 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
         prompt = fmt.Sprintf(
             "User is buying %s by %s. Eco Score: %d (good). "+
                 "Write a short, casual and friendly eco‑motivational message in Bengali (max 2 sentences). "+
-                "Make sure the message feels natural, not formal — like a friend talking. "+
-                "Directly mention the product name in a fun way, so it feels personal. "+
+                "Make sure the message feels natural, not formal "+
+                "Directly mention the product name in a fun way, so it feels personal and tell something related to the product"+
                 "Celebrate their choice and highlight a realistic percentage of waste saved or environmental benefit. "+
                 "Vary the style each time — sometimes playful, sometimes poetic, sometimes motivational. "+
                 "Always include an eco emoji 🌱.",
