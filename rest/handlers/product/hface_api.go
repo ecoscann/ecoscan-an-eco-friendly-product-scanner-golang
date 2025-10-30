@@ -12,32 +12,38 @@ import (
     "ecoscan.com/repo"
 )
 
+// generateMotivationalMessage calls OpenRouter (GPT‑4o) to generate
+// a short eco-friendly motivational message in Bengali.
+// - If score is low: encourage alternatives, but keep it positive.
+// - If score is good: praise the choice and highlight benefits.
+// - Always ask the AI to mention a realistic % of waste saved or similar benefit,
+//   and vary it each time so it feels fresh.
 func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score int) string {
-    apiKey := os.Getenv("OPENROUTER_API_KEY") // set in Render
+    apiKey := os.Getenv("OPENROUTER_API_KEY")
     if apiKey == "" {
-        return "Choosing eco-friendly products helps reduce waste and protect the planet!"
+        return "পরিবেশবান্ধব পণ্য বেছে নেওয়া আমাদের পৃথিবীকে রক্ষা করতে সাহায্য করে!"
     }
 
-    // Adjust prompt based on eco score
     var prompt string
     if score < 50 {
         prompt = fmt.Sprintf(
-            "The user is considering buying %s by %s. Eco Score: %d (low). " +
-                "Write a short, supportive eco-friendly message (max 2 sentences). " +
-                "Encourage them to try alternative choices with higher eco scores for a better impact. " +
-                "Still make it positive and motivating. Mention that buying this saves about %d%% of wastage compared to less eco-friendly options.",
-            product.Name, product.BrandName, score, score/2, // simple % calculation
+            "একজন ব্যবহারকারী %s (%s) কেনার কথা ভাবছেন। ইকো স্কোর: %d (কম)। "+
+                "বাংলায় একটি সংক্ষিপ্ত, সহায়ক পরিবেশবান্ধব বার্তা লিখুন (সর্বোচ্চ ২টি বাক্য)। "+
+                "তাদেরকে আরও ভালো প্রভাবের জন্য উচ্চতর ইকো স্কোরের বিকল্প চেষ্টা করতে উৎসাহিত করুন। "+
+                "বার্তাটি ইতিবাচক ও অনুপ্রেরণামূলক হোক। "+
+                "একটি বাস্তবসম্মত বর্জ্য হ্রাসের শতাংশ বা পরিবেশগত সুবিধা উল্লেখ করুন এবং প্রতিবার ভিন্নভাবে লিখুন যাতে বার্তাটি সতেজ মনে হয়।",
+            product.Name, product.BrandName, score,
         )
     } else {
         prompt = fmt.Sprintf(
-            "The user is buying %s by %s. Eco Score: %d (good). " +
-                "Write a short, uplifting eco-friendly motivational message (max 2 sentences). " +
-                "Make it inspiring and personal. Mention that buying this saves about %d%% of wastage compared to less eco-friendly options.",
-            product.Name, product.BrandName, score, score/2,
+            "একজন ব্যবহারকারী %s (%s) কিনছেন। ইকো স্কোর: %d (ভালো)। "+
+                "বাংলায় একটি সংক্ষিপ্ত, অনুপ্রেরণামূলক পরিবেশবান্ধব বার্তা লিখুন (সর্বোচ্চ ২টি বাক্য)। "+
+                "বার্তাটি ব্যক্তিগত ও ইতিবাচক হোক। "+
+                "একটি বাস্তবসম্মত বর্জ্য হ্রাসের শতাংশ বা পরিবেশগত সুবিধা উল্লেখ করুন এবং প্রতিবার ভিন্নভাবে লিখুন যাতে বার্তাটি সতেজ মনে হয়।",
+            product.Name, product.BrandName, score,
         )
     }
 
-    // Chat-style input
     messages := []map[string]string{
         {"role": "user", "content": prompt},
     }
@@ -61,7 +67,7 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
     resp, err := client.Do(req)
     if err != nil {
         log.Printf("OpenRouter API error: %v", err)
-        return "Your choice makes a positive impact on the environment!"
+        return "আপনার পছন্দ পরিবেশের জন্য ইতিবাচক প্রভাব ফেলছে!"
     }
     defer resp.Body.Close()
 
@@ -83,5 +89,5 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
         }
     }
 
-    return "Thanks for choosing sustainable products — together we reduce waste!"
+    return "ধন্যবাদ পরিবেশবান্ধব পণ্য বেছে নেওয়ার জন্য — একসাথে আমরা বর্জ্য কমাতে পারি!"
 }
