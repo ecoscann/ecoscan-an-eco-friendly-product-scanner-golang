@@ -13,24 +13,37 @@ import (
 )
 
 func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score int) string {
-    apiKey := os.Getenv("OPENROUTER_API_KEY") // set this in Render
+    apiKey := os.Getenv("OPENROUTER_API_KEY") // set in Render
     if apiKey == "" {
         return "Choosing eco-friendly products helps reduce waste and protect the planet!"
     }
 
+    // Adjust prompt based on eco score
+    var prompt string
+    if score < 50 {
+        prompt = fmt.Sprintf(
+            "The user is considering buying %s by %s. Eco Score: %d (low). " +
+                "Write a short, supportive eco-friendly message (max 2 sentences). " +
+                "Encourage them to try alternative choices with higher eco scores for a better impact. " +
+                "Still make it positive and motivating. Mention that buying this saves about %d%% of wastage compared to less eco-friendly options.",
+            product.Name, product.BrandName, score, score/2, // simple % calculation
+        )
+    } else {
+        prompt = fmt.Sprintf(
+            "The user is buying %s by %s. Eco Score: %d (good). " +
+                "Write a short, uplifting eco-friendly motivational message (max 2 sentences). " +
+                "Make it inspiring and personal. Mention that buying this saves about %d%% of wastage compared to less eco-friendly options.",
+            product.Name, product.BrandName, score, score/2,
+        )
+    }
+
     // Chat-style input
     messages := []map[string]string{
-        {
-            "role": "user",
-            "content": fmt.Sprintf(
-                "Write a short, uplifting eco-friendly motivational message (max 2 sentences) for a user buying %s by %s. Eco Score: %d. Make it sound inspiring and personal. Encourage them to keep using ecoScanAi.",
-                product.Name, product.BrandName, score,
-            ),
-        },
+        {"role": "user", "content": prompt},
     }
 
     payload := map[string]interface{}{
-        "model":    "mistralai/voxtral-small-24b-2507",
+        "model":    "openai/gpt-4o",
         "messages": messages,
     }
 
