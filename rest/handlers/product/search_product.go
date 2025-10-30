@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"ecoscan.com/logic"
 	"ecoscan.com/repo"
 )
 
@@ -23,7 +24,6 @@ func (h *ProductHandler) SearchProductsByName(w http.ResponseWriter, r *http.Req
 	similarityThreshold := 0.3
 	maxResults := 10
 
-
 	dbQuery := `
 		SELECT 
 			id, barcode, name, brand_name, category, sub_category, 
@@ -37,11 +37,10 @@ func (h *ProductHandler) SearchProductsByName(w http.ResponseWriter, r *http.Req
 		LIMIT $3
 	`
 
-	
 	err := h.DB.Select(&results, dbQuery, searchQueryLower, similarityThreshold, maxResults)
 
 	if err != nil {
-		
+
 		log.Printf("FATAL SQL ERROR searching '%s': %v", query, err)
 		http.Error(w, `{"message": "Could not perform search"}`, http.StatusInternalServerError)
 		return
@@ -54,6 +53,10 @@ func (h *ProductHandler) SearchProductsByName(w http.ResponseWriter, r *http.Req
 		log.Printf("No products found matching query: '%s'", query)
 	} else {
 		log.Printf("Returning %d fuzzy matches for query: '%s'", len(results), query)
+	}
+
+	for i := range results {
+		results[i].Score = int(logic.CalculateScore(results[i]))
 	}
 
 	w.WriteHeader(http.StatusOK)
