@@ -18,14 +18,14 @@ func(h *ProductHandler) generateMotivationalMessage(product repo.Product, score 
 	}
 
 	prompt := `
-    Create a short, motivating message for a user who is considering purchasing this product:
+    Create a 3 sentences, motivating message for a user who is considering purchasing this product:
     Name: ` + product.Name + `
     Brand: ` + product.BrandName + `
     Eco Score: ` + getScoreRating(score) + `
 
     The message should highlight how purchasing this product reduces environmental impact
     (e.g., waste reduction, sustainability) and encourage the user to keep using ecoScanAi.
-    Keep it under 2 sentences.
+    Keep it under 3 sentences. better response considering everything i told you
     `
 
 	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + apiKey
