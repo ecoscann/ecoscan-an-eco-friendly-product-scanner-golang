@@ -15,7 +15,7 @@ import (
 // generateMotivationalMessage calls Hugging Face Inference API
 // to generate a short eco-friendly motivational message.
 func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score int) string {
-      apiKey := os.Getenv("HF_API_KEY")
+     apiKey := os.Getenv("HF_API_KEY")
     if apiKey == "" {
         return "Choosing eco-friendly products helps reduce waste and protect the planet!"
     }
@@ -25,7 +25,8 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
         product.Name, product.BrandName, score,
     )
 
-    url := "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
+    // ✅ New Inference Providers endpoint
+    url := "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.2"
 
     body := map[string]string{"inputs": prompt}
     bodyBytes, _ := json.Marshal(body)
@@ -43,9 +44,9 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
     defer resp.Body.Close()
 
     respBody, _ := ioutil.ReadAll(resp.Body)
-    log.Println("HF raw response:", string(respBody)) // 👈 log raw response for debugging
+    log.Println("HF raw response:", string(respBody))
 
-    // Try array format first
+    // Try array format
     var arr []map[string]interface{}
     if err := json.Unmarshal(respBody, &arr); err == nil && len(arr) > 0 {
         if text, ok := arr[0]["generated_text"].(string); ok && text != "" {
