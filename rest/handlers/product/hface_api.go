@@ -14,22 +14,22 @@ import (
     "ecoscan.com/repo"
 )
 
-// Fallback messages for low-score products (encourage alternatives)
+// Fallback messages for low-score products (3-line, respectful "আপনি" tone)
 var lowScoreFallbacks = []string{
-    "%s নিলে কিছুটা বর্জ্য কমবে 🌱 তবে আরেকটা greener option নিলে প্রায় ২৫%% বেশি save করতে পারবে!",
-    "হয়তো %s এখনকার জন্য ঠিক আছে, কিন্তু higher eco score product নিলে পরিবেশে আরও বড় প্রভাব ফেলতে পারবে 🌱",
-    "%s কিনে তুমি কিছুটা সাহায্য করছ, কিন্তু আরও ভালো বিকল্প বেছে নিলে waste reduction দ্বিগুণ হতে পারে 🌱",
+    "বাহ, %s খেলে সত্যিই রিফ্রেশিং লাগে 🌱\nতবে প্লাস্টিক বোতলটা পরিবেশের জন্য ভালো নয়।\nআপনি যদি ক্যান নিতেন, প্রায় ৩০%% বর্জ্য কমানো যেতো।",
+    "%s ব্যবহার করলে মজা আছে 🌱\nকিন্তু এর প্যাকেজিংটা টেকসই নয়।\nআপনি যদি কাচ বা ক্যান বেছে নিতেন, প্রায় ২৫%% সেভ করতে পারতেন।",
+    "%s খাওয়া দারুণ লাগে 🌱\nকিন্তু প্লাস্টিক বোতলটা প্রকৃতির ক্ষতি করে।\nআপনি যদি বিকল্প নিতেন, waste reduction দ্বিগুণ হতো।",
 }
 
-// Fallback messages for good-score products (celebrate choice)
+// Fallback messages for good-score products (3-line, respectful "আপনি" tone)
 var goodScoreFallbacks = []string{
-    "চমৎকার! %s বেছে নিয়ে তুমি প্রায় ৪০%% বর্জ্য কমাচ্ছো 🌱 keep it up!",
-    "%s নেওয়ায় পরিবেশ আরও সবুজ হচ্ছে 🌱 তোমার এই চয়েস সত্যিই অনুপ্রেরণাদায়ক!",
-    "%s কিনে তুমি পৃথিবীকে একটু হালকা করছ 🌱 sustainable choice rocks!",
+    "চমৎকার! %s বেছে নিয়ে আপনি দারুণ কাজ করেছেন 🌱\nএই প্যাকেজিংটা তুলনামূলকভাবে পরিবেশবান্ধব।\nএভাবে প্রায় ৪০%% বর্জ্য কমছে।",
+    "%s নেওয়ায় আপনি পরিবেশকে সাহায্য করছেন 🌱\nএটা সত্যিই অনুপ্রেরণাদায়ক একটি সিদ্ধান্ত।\nএভাবে প্রায় ৩৫%% waste সেভ হচ্ছে।",
+    "%s কিনে আপনি পৃথিবীকে একটু হালকা করেছেন 🌱\nএটা sustainable choice, ভবিষ্যতের জন্য ভালো।\nএভাবে প্রায় ৪৫%% সেভ হচ্ছে।",
 }
 
 // generateMotivationalMessage calls OpenRouter (GPT‑4o) to generate
-// a short eco-friendly motivational message in Bengali 🌱.
+// a 3-line eco-friendly motivational message in Bengali 🌱.
 func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score int) string {
     apiKey := os.Getenv("OPENROUTER_API_KEY")
     if apiKey == "" {
@@ -40,21 +40,22 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
     if score < 50 {
         prompt = fmt.Sprintf(
             "User is considering buying %s by %s. Eco Score: %d (low). "+
-                "Write a short, casual and friendly eco‑motivational message in Bengali (max 2 sentences). "+
-                "Make sure the message feels natural, not formal  "+
-                "Directly mention the product name in a fun way, so it feels personal and tell something related to the product "+
-                "Encourage them to try a greener alternative, but keep it supportive and light. "+
-                "Also mention a realistic percentage of waste saved or environmental benefit, and vary it each time so it feels fresh. "+
-                "Always include an eco emoji 🌱.",
+                "Write a short interesting eco‑motivational message in Bengali, exactly 3 lines. "+
+                "- Use respectful 'আপনি' tone. "+
+                "- Line 1: Mention the product name and say something about its usage/experience (e.g., refreshing, tasty, useful). "+
+                "- Line 2: Casually point out the packaging/environmental issue (e.g., plastic bottle, non‑eco packaging). "+
+                "- Line 3: Suggest a greener alternative (like can, glass, paper) and mention a realistic percentage of waste saved. and look down for better alternatives with high score"+
+                "Keep it natural, light, and positive. Always include an eco emoji 🌱.",
             product.Name, product.BrandName, score,
         )
     } else {
         prompt = fmt.Sprintf(
             "User is buying %s by %s. Eco Score: %d (good). "+
-                "Write a short, casual and friendly eco‑motivational message in Bengali (max 2 sentences). "+
-                "Make sure the message feels natural, not formal "+
-                "Directly mention the product name in a fun way, so it feels personal and tell something related to the product"+
-                "Celebrate their choice and highlight a realistic percentage of waste saved or environmental benefit. "+
+                "Write a short interesting eco‑motivational message in Bengali, exactly 3 lines"+
+                "- Use respectful 'আপনি' tone. "+
+                "- Line 1: Mention the product name and say something about its usage/experience (e.g., refreshing, tasty, useful). "+
+                "- Line 2: Celebrate their choice and say something nice about the product/packaging. "+
+                "- Line 3: Highlight a realistic percentage of waste saved. "+
                 "Vary the style each time — sometimes playful, sometimes poetic, sometimes motivational. "+
                 "Always include an eco emoji 🌱.",
             product.Name, product.BrandName, score,
@@ -108,7 +109,7 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
     return randomScoreAwareFallback(product.Name, score)
 }
 
-// randomScoreAwareFallback picks a fallback message based on eco score
+// randomScoreAwareFallback picks a 3-line fallback message based on eco score
 func randomScoreAwareFallback(productName string, score int) string {
     rand.Seed(time.Now().UnixNano())
     if score < 50 {

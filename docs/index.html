@@ -1334,37 +1334,9 @@ renderProductModal(data); // <-- ADJUSTED: Pass the whole response object
             // === SEARCH LOGIC ===
             // === SEARCH LOGIC ===
 
-            let debounceTimer; // Timer for your "time gap" idea
-
-            async function searchProducts(query) {
-                if (query.length < 2) {
-                    searchResultsContainer.classList.add('hidden');
-                    return;
-                }
-                
-                // Clear the existing timer on every new keystroke
-                clearTimeout(debounceTimer);
-
-                // Start a new timer
-                debounceTimer = setTimeout(async () => {
-                    // This code will only run 300ms *after* the user stops typing
-                    searchResultsList.innerHTML = `<li class="p-4 text-gray-500">Searching...</li>`;
-                    searchResultsContainer.classList.remove('hidden');
-
-                    try {
-                        const response = await fetch(`${API_BASE_URL}/api/v1/products/search?q=${encodeURIComponent(query)}`);
-                        if (!response.ok) throw new Error('Search failed');
-                        
-                        const products = await response.json();
-                        renderSearchResults(products || []);
-                    } catch (error) {
-                        console.error("Error searching:", error);
-                        searchResultsList.innerHTML = `<li class="p-4 text-red-500">Search error.</li>`;
-                    }
-                }, 200); // 300ms time gap
-            }
             
-            // This function is new or needs to be updated from my previous answer
+
+           // This function is new or needs to be updated from my previous answer
             function renderSearchResults(products) {
                 searchResultsList.innerHTML = ''; // Clear "Searching..."
                 if (products.length === 0) {
