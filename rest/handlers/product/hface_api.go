@@ -26,7 +26,8 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
     )
 
     // ✅ New Inference Providers endpoint
-    url := "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.2"
+    url := "https://router.huggingface.co/hf-inference/models/meta-llama/Llama-3.1-8B-Instruct"
+
 
     body := map[string]string{"inputs": prompt}
     bodyBytes, _ := json.Marshal(body)
