@@ -37,16 +37,16 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
     }
 
     var prompt string
-    if score < 50 {
+    if score < 60 {
         prompt = fmt.Sprintf(
             "User is considering buying %s by %s. Eco Score: %d (low). "+
                 "Write a short interesting eco‑motivational message in Bengali, exactly 3 lines. "+
                 "- Use respectful 'আপনি' tone. "+
                 "- Line 1: Mention the product name and say something about its usage/experience (e.g., refreshing, tasty, useful). "+
-                "- Line 2: Casually point out the packaging/environmental issue (e.g., plastic bottle, non‑eco packaging). "+
+                "- Line 2: Casually point out the %s packaging/environmental issue (e.g., plastic bottle, non‑eco packaging). "+
                 "- Line 3: Suggest a greener alternative (like can, glass, paper) and mention a realistic percentage of waste saved. and look down for better alternatives with high score"+
                 "Keep it natural, light, and positive. Always include an eco emoji 🌱.",
-            product.Name, product.BrandName, score,
+            product.Name, product.BrandName, score, product.PackagingMaterial,
         )
     } else {
         prompt = fmt.Sprintf(
