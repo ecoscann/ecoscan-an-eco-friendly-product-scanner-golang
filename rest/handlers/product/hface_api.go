@@ -14,49 +14,45 @@ import (
     "ecoscan.com/repo"
 )
 
-// Pre-written fallback messages (natural Bengali, casual, with 🌱)
+// Pre-written fallback messages (casual Bengali with 🌱).
+// Use %s placeholder for product name.
 var fallbackMessages = []string{
-    "তুমি এই পণ্যটি বেছে নিয়ে প্রায় ৩০% বর্জ্য কমাতে সাহায্য করছ 🌱 ছোট্ট পদক্ষেপ, বড় পরিবর্তন!",
-    "চমৎকার! এই সিদ্ধান্তে পরিবেশ আরও সবুজ হচ্ছে 🌱",
-    "তোমার এই চয়েসে প্রায় ২৫% বর্জ্য কমছে 🌱 keep going!",
-    "প্রকৃতি তোমার পাশে হাসছে 🌱 sustainable choice নিলে ভবিষ্যৎ উজ্জ্বল হয়।",
-    "এই পণ্যটি বেছে নিয়ে তুমি পৃথিবীকে একটু হালকা করছ 🌱",
+    "%s বেছে নিয়ে তুমি প্রায় ৩০%% বর্জ্য কমাতে সাহায্য করছ 🌱 ছোট্ট পদক্ষেপ, বড় পরিবর্তন!",
+    "চমৎকার! %s নেওয়ায় পরিবেশ আরও সবুজ হচ্ছে 🌱",
+    "%s কিনে তুমি প্রায় ২৫%% বর্জ্য কমাচ্ছো 🌱 keep going!",
+    "প্রকৃতি তোমার পাশে হাসছে 🌱 %s এর মতো sustainable choice নিলে ভবিষ্যৎ উজ্জ্বল হয়।",
+    "%s বেছে নিয়ে তুমি পৃথিবীকে একটু হালকা করছ 🌱",
 }
 
 // generateMotivationalMessage calls OpenRouter (GPT‑4o) to generate
 // a short eco-friendly motivational message in Bengali 🌱.
-// - If score is low: encourage alternatives, but keep it supportive.
-// - If score is good: praise the choice and highlight benefits.
-// - Always in natural, inspiring Bengali (not overly formal).
-// - Randomize style: sometimes poetic, sometimes playful, sometimes motivational.
-// - Always include an eco emoji 🌱.
-// - If API fails, return a random fallback message.
 func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score int) string {
     apiKey := os.Getenv("OPENROUTER_API_KEY")
     if apiKey == "" {
-        return randomFallback()
+        return randomFallback(product.Name)
     }
 
     var prompt string
     if score < 50 {
         prompt = fmt.Sprintf(
-            "একজন ব্যবহারকারী %s (%s) কেনার কথা ভাবছেন। ইকো স্কোর: %d (কম)। "+
-                "বাংলায় একটি সংক্ষিপ্ত, স্বাভাবিক ও অনুপ্রেরণামূলক পরিবেশবান্ধব বার্তা লিখুন (সর্বোচ্চ ২টি বাক্য)। "+
-                "তাদেরকে আরও ভালো প্রভাবের জন্য উচ্চতর ইকো স্কোরের বিকল্প চেষ্টা করতে উৎসাহিত করুন। "+
-                "বার্তাটি যেন বন্ধুসুলভ ও ইতিবাচক হয়। "+
-                "একটি বাস্তবসম্মত বর্জ্য হ্রাসের শতাংশ বা পরিবেশগত সুবিধা উল্লেখ করুন এবং প্রতিবার ভিন্নভাবে লিখুন যাতে বার্তাটি সতেজ মনে হয়। "+
-                "স্টাইলটি প্রতিবার ভিন্ন হোক — কখনও কাব্যিক, কখনও খেলাচ্ছলে, কখনও সরাসরি অনুপ্রেরণামূলক। "+
-                "বার্তায় একটি পরিবেশ ইমোজি 🌱 ব্যবহার করুন।",
+            "User is considering buying %s by %s. Eco Score: %d (low). "+
+                "Write a short, casual and friendly eco‑motivational message in Bengali (max 2 sentences). "+
+                "Make sure the message feels natural, not formal — like a friend talking. "+
+                "Directly mention the product name in a fun way, so it feels personal. "+
+                "Encourage them to try a greener alternative, but keep it supportive and light. "+
+                "Also mention a realistic percentage of waste saved or environmental benefit, and vary it each time so it feels fresh. "+
+                "Always include an eco emoji 🌱.",
             product.Name, product.BrandName, score,
         )
     } else {
         prompt = fmt.Sprintf(
-            "একজন ব্যবহারকারী %s (%s) কিনছেন। ইকো স্কোর: %d (ভালো)। "+
-                "বাংলায় একটি সংক্ষিপ্ত, স্বাভাবিক ও অনুপ্রেরণামূলক পরিবেশবান্ধব বার্তা লিখুন (সর্বোচ্চ ২টি বাক্য)। "+
-                "বার্তাটি যেন ব্যক্তিগত, উষ্ণ ও ইতিবাচক হয়। "+
-                "একটি বাস্তবসম্মত বর্জ্য হ্রাসের শতাংশ বা পরিবেশগত সুবিধা উল্লেখ করুন এবং প্রতিবার ভিন্নভাবে লিখুন যাতে বার্তাটি সতেজ মনে হয়। "+
-                "স্টাইলটি প্রতিবার ভিন্ন হোক — কখনও কাব্যিক, কখনও খেলাচ্ছলে, কখনও সরাসরি অনুপ্রেরণামূলক। "+
-                "বার্তায় একটি পরিবেশ ইমোজি 🌱 ব্যবহার করুন।",
+            "User is buying %s by %s. Eco Score: %d (good). "+
+                "Write a short, casual and friendly eco‑motivational message in Bengali (max 2 sentences). "+
+                "Make sure the message feels natural, not formal — like a friend talking. "+
+                "Directly mention the product name in a fun way, so it feels personal. "+
+                "Celebrate their choice and highlight a realistic percentage of waste saved or environmental benefit. "+
+                "Vary the style each time — sometimes playful, sometimes poetic, sometimes motivational. "+
+                "Always include an eco emoji 🌱.",
             product.Name, product.BrandName, score,
         )
     }
@@ -80,11 +76,11 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
     req.Header.Set("HTTP-Referer", "https://yourapp.com")
     req.Header.Set("X-Title", "ecoScanAi")
 
-    client := &http.Client{Timeout: 15 * time.Second}
+    client := &http.Client{Timeout: 12 * time.Second}
     resp, err := client.Do(req)
     if err != nil {
         log.Printf("OpenRouter API error: %v", err)
-        return randomFallback()
+        return randomFallback(product.Name)
     }
     defer resp.Body.Close()
 
@@ -105,11 +101,12 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
         }
     }
 
-    return randomFallback()
+    return randomFallback(product.Name)
 }
 
-// randomFallback returns a random pre-written Bengali message
-func randomFallback() string {
+// randomFallback returns a random pre-written Bengali message with product name
+func randomFallback(productName string) string {
     rand.Seed(time.Now().UnixNano())
-    return fallbackMessages[rand.Intn(len(fallbackMessages))]
+    msg := fallbackMessages[rand.Intn(len(fallbackMessages))]
+    return fmt.Sprintf(msg, productName)
 }
