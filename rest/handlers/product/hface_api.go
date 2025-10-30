@@ -15,13 +15,13 @@ import (
 // generateMotivationalMessage calls Hugging Face Inference API
 // to generate a short eco-friendly motivational message.
 func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score int) string {
-    apiKey := os.Getenv("HF_API_KEY")
+      apiKey := os.Getenv("HF_API_KEY")
     if apiKey == "" {
         return "Choosing eco-friendly products helps reduce waste and protect the planet!"
     }
 
     prompt := fmt.Sprintf(
-        "Write a short, motivating message (1-2 sentences) for a user buying %s by %s. Eco Score: %d. Highlight reduced waste and sustainability. Encourage them to keep using ecoScanAi.",
+        "Write a short, uplifting, and creative eco-friendly message (max 2 sentences) for a user buying %s by %s. Eco Score: %d. Make it sound positive, inspiring, and personal. Encourage them to keep using ecoScanAi.",
         product.Name, product.BrandName, score,
     )
 
@@ -43,15 +43,20 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
     defer resp.Body.Close()
 
     respBody, _ := ioutil.ReadAll(resp.Body)
+    log.Println("HF raw response:", string(respBody)) // 👈 log raw response for debugging
 
-    var result []map[string]interface{}
-    if err := json.Unmarshal(respBody, &result); err != nil {
-        log.Printf("Error parsing Hugging Face response: %v", err)
-        return "Every eco-friendly purchase counts toward a greener future!"
+    // Try array format first
+    var arr []map[string]interface{}
+    if err := json.Unmarshal(respBody, &arr); err == nil && len(arr) > 0 {
+        if text, ok := arr[0]["generated_text"].(string); ok && text != "" {
+            return text
+        }
     }
 
-    if len(result) > 0 {
-        if text, ok := result[0]["generated_text"].(string); ok {
+    // Try object format
+    var obj map[string]interface{}
+    if err := json.Unmarshal(respBody, &obj); err == nil {
+        if text, ok := obj["generated_text"].(string); ok && text != "" {
             return text
         }
     }
