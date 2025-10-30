@@ -815,8 +815,7 @@ function renderProductModal(data) {
     // Main product price
     const priceEl = $('product-price');
     if (priceEl) {
-        priceEl.textContent = `৳${product.price.toFixed(2)}`;
-
+        priceEl.textContent = `$${product.price.toFixed(2)}`;
     }
 
     // Main score
@@ -828,64 +827,44 @@ function renderProductModal(data) {
     $('product-transport').textContent = `${transScore}/100`;
     $('product-disposal').textContent = `${dispScore}/100`;
 
-    // --- Alternatives Section (The Fix) ---
-    const altList = $('product-alternatives-list');
-    const altContainer = $('product-alternatives-container');
+   // Alternatives
+const altList = document.getElementById('product-alternatives-list');
+const altContainer = document.getElementById('product-alternatives-container');
 
-    // 1. Clear the list of old alternatives
-    altList.innerHTML = '';
+altList.innerHTML = '';
 
-    // 2. Clone the list to remove all old event listeners
-    const newAltList = altList.cloneNode(false);
-    altList.parentNode.replaceChild(newAltList, altList);
+if (alternatives && alternatives.length > 0) {
+  altContainer.classList.remove('hidden');
 
-    if (alternatives && alternatives.length > 0) {
-        // 3. Add all the new alternative cards
-        alternatives.forEach(alt => {
-            newAltList.innerHTML += `
-<div class="flex-shrink-0 w-48 bg-gray-50 border border-gray-200 rounded-lg shadow-sm p-4 text-center cursor-pointer hover:bg-gray-100 transition-colors alt-card" data-barcode="${alt.barcode}">
- <img src="${alt.image_url || 'https://placehold.co/200x200/eeeeee/cccccc?text=No+Image'}" alt="${alt.name}" class="w-full h-24 object-cover rounded-md mb-3" />
- <h5 class="font-semibold text-sm">${alt.name}</h5>
- <p class="text-xs text-gray-500 mb-2">${alt.brand_name}</p>
- <div class="text-lg font-bold text-gray-800 mb-1">${alt.score}</div>
- <p class="text-md font-semibold text-green-600">৳${alt.price.toFixed(2)}</p>
- </div>
- `;
-        });
+  const cardsHtml = alternatives.map(alt => `
+    <div class="flex-shrink-0 w-48 bg-gray-50 border border-gray-200 rounded-lg shadow-sm p-4 text-center cursor-pointer hover:bg-gray-100 transition-colors alt-card"
+         data-barcode="${alt.barcode}">
+      <img src="${alt.image_url || 'https://placehold.co/200x200/eeeeee/cccccc?text=No+Image'}"
+           alt="${alt.name}"
+           class="w-full h-24 object-cover rounded-md mb-3" />
+      <h5 class="font-semibold text-sm">${alt.name}</h5>
+      <p class="text-xs text-gray-500 mb-2">${alt.brand_name || ''}</p>
+      <div class="text-lg font-bold text-gray-800 mb-1">${alt.score ?? ''}</div>
+      <p class="text-md font-semibold text-green-600">
+        ${typeof alt.price === 'number' ? `৳${alt.price.toFixed(2)}` : ''}
+      </p>
+    </div>
+  `).join('');
 
-        // 4. Add ONE SINGLE click listener to the entire list
-        newAltList.addEventListener('click', (e) => {
-            const card = e.target.closest('.alt-card');
-            if (card) {
-                const barcode = card.dataset.barcode;
-                
-                // --- THIS IS THE LOGIC YOU ASKED FOR ---
-                // 1. Close the current modal
-                closeModal(); // Assumes you have a closeModal() function
-                
-                // 2. Fetch the new product using its barcode
-                fetch(`https://ecoscan-an-eco-friendly-product-scanner.onrender.com/api/v1/products/barcode/${barcode}`)
-                    .then(res => {
-                        if (!res.ok) {
-                            throw new Error('Product not found');
-                        }
-                        return res.json();
-                    })
-                    .then(productData => {
-                        // 3. Open the modal again with the NEW data
-                        renderProductModal(productData);
-                    })
-                    .catch(err => {
-                        console.error("Error fetching alternative product:", err);
-                        // You should probably show an error message to the user here
-                    });
-            }
-        });
+  altList.innerHTML = cardsHtml;
 
-        altContainer.classList.remove('hidden');
-    } else {
-        altContainer.classList.add('hidden');
-    }
+  // Delegate click to the list
+  altList.onclick = (e) => {
+    const card = e.target.closest('.alt-card');
+    if (!card) return;
+    const barcode = card.dataset.barcode;
+    // Just update the modal with the new product
+    fetchProductByBarcode(barcode, false);
+  };
+} else {
+  altContainer.classList.add('hidden');
+}
+
 
     // --- Show the modal ---
     // (Assuming 'productModal' is a global variable holding the modal element)
@@ -893,7 +872,9 @@ function renderProductModal(data) {
     productModal.querySelector('.modal-content').classList.add('scale-100');
 }
 
-        function closeModal() {
+        // (Assuming 'productModal' is a global variable defined at the top of your script)
+
+function closeModal() {
     // This assumes your main modal element has the ID "productModal"
     const modal = $('productModal'); 
     
@@ -907,6 +888,8 @@ function renderProductModal(data) {
         }
     }
 }
+
+// ... your renderProductModal function comes right after this ...
             /**
              * Renders the user's dashboard with their info.
              */
@@ -1334,7 +1317,7 @@ renderProductModal(data); // <-- ADJUSTED: Pass the whole response object
                         console.error("Error searching:", error);
                         searchResultsList.innerHTML = `<li class="p-4 text-red-500">Search error.</li>`;
                     }
-                }, 300); // 300ms time gap
+                }, 200); // 300ms time gap
             }
             
             // This function is new or needs to be updated from my previous answer
@@ -1510,7 +1493,8 @@ renderProductModal(data); // <-- ADJUSTED: Pass the whole response object
                     }
                     
                     const productData = await response.json();
-                    showProductModal(productData);
+                    renderProductModal(productData);
+
 
                 } catch (error) {
                     console.error('Barcode search error:', error);

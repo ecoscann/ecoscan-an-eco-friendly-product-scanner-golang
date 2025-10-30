@@ -16,6 +16,7 @@ type ProductResponse struct {
     Score        int            `json:"score"`
     ScoreRating  string         `json:"score_rating"`
     Alternatives []repo.Product `json:"alternatives"`
+    Message string `json:"message"`
 }
 
 func getScoreRating(score int) string {
@@ -79,11 +80,43 @@ func (h *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
         log.Printf("Calculated score for alternative %s: %d", alternativesData[i].Barcode, altScore)
     }
 
+    // extract cache if already in db
+    var cachedMessage string 
+    err = h.DB.Get(&cachedMessage, "SELECT eco_message FROM products WHERE id = $1", mainProduct.ID)
+    if err == nil && cachedMessage != "" {
+    // Use cached message
     response := ProductResponse{
         Product:      mainProduct,
         Score:        productScore,
         ScoreRating:  scoreRating,
         Alternatives: alternativesData,
+        Message:      cachedMessage,
+    }
+    w.WriteHeader(http.StatusOK)
+    err = json.NewEncoder(w).Encode(response)
+    if err != nil {
+        log.Printf("Error encoding response: %v", err)
+    }
+    return
+}
+
+
+    // if no cache we save into db 
+    message := h.generateMotivationalMessage(mainProduct, productScore)
+
+// Save it back to DB for next time
+_, err = h.DB.Exec("UPDATE products SET eco_message = $1 WHERE id = $2", message, mainProduct.ID)
+if err != nil {
+    log.Printf("Failed to cache Gemini message: %v", err)
+}
+
+
+    response := ProductResponse{
+        Product:      mainProduct,
+        Score:        productScore,
+        ScoreRating:  scoreRating,
+        Alternatives: alternativesData,
+        Message: message,
     }
 
     w.WriteHeader(http.StatusOK)
