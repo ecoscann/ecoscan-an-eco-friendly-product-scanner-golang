@@ -55,7 +55,7 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
                 "- Use respectful 'আপনি' tone. use some english word english words dont write full bangla"+
                 "- Line 1: Mention the product name and say something interesting about its usage/experience"+
                 "- Line 2: Celebrate their choice and say something nice about the product/packaging. "+
-                "- Line 3: Highlight a realistic percentage of waste user saved."+
+                "- Line 3: Highlight a realistic percentage of waste user will save if they purchase it."+
                 "Vary the style each time — sometimes playful, sometimes poetic, sometimes motivational. but must humorous"+
                 "Always include an eco emoji 🌱.",
             product.Name, product.BrandName, score,
