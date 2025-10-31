@@ -38,28 +38,34 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
 
     var prompt string
     if score < 60 {
-        prompt = fmt.Sprintf(
-            "User is considering buying %s by %s. Eco Score: %d (low). "+
-                "Write a short interesting eco‑motivational message in casual Bengali. "+
-                "- Use respectful 'আপনি' tone. use some english words dont write full bangla"+
-                "- Line 1: Mention the product name and say something about its usage/experience in casual style. "+
-                "- Line 2: Casually point out the %s packaging/environmental issue (e.g., plastic bottle, non‑eco packaging). "+
-                "- Line 3: Suggest user to look for a greener alternative (like can, glass, paper) and mention a realistic percentage of waste saved if the user pick better alternatives. and look down for better alternatives with high score"+
-                "Keep it natural, humour, light, and positive. Always include an eco emoji 🌱.",
-            product.Name, product.BrandName, score, product.PackagingMaterial,
-        )
-    } else {
-        prompt = fmt.Sprintf(
-            "User is buying %s by %s. Eco Score: %d (good). "+
-                "Write a short interesting eco‑motivational message in casual Bengali"+
-                "- Use respectful 'আপনি' tone. use some english word english words dont write full bangla"+
-                "- Line 1: Mention the product name and say something interesting about its usage/experience in casual way"+
-                "- Line 2: Celebrate their choice and say something nice about the product/packaging. "+
-                "- Line 3: Highlight a realistic percentage of waste user will save if they purchase it. and a happy msg to motivate the user"+
-                "Keep it natural, humour, light, and positive. Always include an eco emoji 🌱.",
-            product.Name, product.BrandName, score,
-        )
-    }
+		 
+		prompt = fmt.Sprintf(
+			"Context: The user is scanning a product (%s by %s) with a low eco-score (%d). "+
+				"Task: Write a 3-line, empathetic, and encouraging message in casual Bengali (Banglish style). "+
+				"Tone: Respectful 'আপনি', friendly, light-hearted, and non-judgmental. "+
+				"--- "+
+				"Guidelines: "+
+				"- **Line 1:** Acknowledge their interest and connect with the product's appeal. Start with something like 'বাহ, %s!' or 'Ah, %s!' and mention its nice usage (e.g., '... a quick refresh...'). "+
+				"- **Line 2:** Gently give a 'heads-up' about the issue. Use the specific packaging material (%s). Phrase it like, 'Just a heads-up, এর %s packaging-টা environment-এর জন্য একটু heavy.' "+
+				"- **Line 3:** Empower them. Suggest a positive alternative (like can/glass) and mention a **realistic impact percentage (e.g., 25%%-40%%)**. Encourage them to 'scroll down' to see the better-scoring options you've found for them. "+
+				"Always end with an eco emoji 🌱.",
+			product.Name, product.BrandName, score, product.Name, product.PackagingMaterial, product.PackagingMaterial,
+		)
+	} else {
+		
+		prompt = fmt.Sprintf(
+			"Context: The user is scanning a product (%s by %s) with a good eco-score (%d). "+
+				"Task: Write a 3-line, celebratory message in casual Bengali (Banglish style). "+
+				"Tone: Respectful 'আপনি', enthusiastic, positive, and reinforcing. "+
+				"--- "+
+				"Guidelines: "+
+				"- **Line 1:** Start with excitement! Confirm their choice with enthusiasm (e.g., 'Yes! %s!' or 'চমৎকার! %s!'). "+
+				"- **Line 2:** Directly praise *the user's* choice. Connect their action to the positive outcome (e.g., 'আপনি দারুণ একটা sustainable choice করেছেন!' or 'This is a fantastic eco-friendly pick!'). "+
+				"- **Line 3:** Quantify *their* positive impact with a **realistic percentage (e.g., 30%%-50%%)**. Make them feel proud (e.g., 'Your choice just saved over XX%% in waste! Keep up the great work!'). "+
+				"Always end with an eco emoji 🌱.",
+			product.Name, product.BrandName, score, product.Name, product.Name,
+		)
+	}
 
     messages := []map[string]string{
         {"role": "user", "content": prompt},
