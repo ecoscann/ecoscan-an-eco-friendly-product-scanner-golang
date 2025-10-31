@@ -40,9 +40,9 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
     if score < 60 {
         prompt = fmt.Sprintf(
             "User is considering buying %s by %s. Eco Score: %d (low). "+
-                "Write a short interesting eco‑motivational message in casual Bengali, exactly 3 lines. "+
+                "Write a short interesting eco‑motivational message in casual Bengali. "+
                 "- Use respectful 'আপনি' tone. use some english words dont write full bangla"+
-                "- Line 1: Mention the product name and say something about its usage/experience. "+
+                "- Line 1: Mention the product name and say something about its usage/experience in casual style. "+
                 "- Line 2: Casually point out the %s packaging/environmental issue (e.g., plastic bottle, non‑eco packaging). "+
                 "- Line 3: Suggest user to look for a greener alternative (like can, glass, paper) and mention a realistic percentage of waste saved if the user pick better alternatives. and look down for better alternatives with high score"+
                 "Keep it natural, humour, light, and positive. Always include an eco emoji 🌱.",
@@ -51,11 +51,11 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
     } else {
         prompt = fmt.Sprintf(
             "User is buying %s by %s. Eco Score: %d (good). "+
-                "Write a short interesting eco‑motivational message in casual Bengali, exactly 3 lines"+
+                "Write a short interesting eco‑motivational message in casual Bengali"+
                 "- Use respectful 'আপনি' tone. use some english word english words dont write full bangla"+
-                "- Line 1: Mention the product name and say something interesting about its usage/experience"+
+                "- Line 1: Mention the product name and say something interesting about its usage/experience in casual way"+
                 "- Line 2: Celebrate their choice and say something nice about the product/packaging. "+
-                "- Line 3: Highlight a realistic percentage of waste user will save if they purchase it."+
+                "- Line 3: Highlight a realistic percentage of waste user will save if they purchase it. and a happy msg to motivate the user"+
                 "Keep it natural, humour, light, and positive. Always include an eco emoji 🌱.",
             product.Name, product.BrandName, score,
         )
