@@ -1637,45 +1637,6 @@ renderProductModal(data); // <-- ADJUSTED: Pass the whole response object
             initApp();
         });
     </script>
-
-    <script>
-async function loadProduct(barcode) {
-  // Fetch product info
-  const res = await fetch(`/api/v1/products/barcode/${barcode}`);
-  const data = await res.json();
-
-  // Fill product info
-  document.getElementById("product-name").textContent = data.product.name;
-  document.getElementById("product-brand").textContent = data.product.brand_name;
-  document.getElementById("product-score").textContent = data.score;
-  document.getElementById("product-score-rating").textContent = data.score_rating;
-  document.getElementById("product-barcode").textContent = data.product.barcode;
-
-  /// Show eco message container with placeholder
-const msgContainer = document.getElementById("product-message-container");
-const msgBox = document.getElementById("product-message");
-
-msgContainer.classList.remove("hidden");
-msgBox.textContent = "Eco tip আসছে… 🌱";
-
-// Then start polling for AI message
-pollMessage(barcode);
-
-}
-
-async function pollMessage(barcode) {
-  const msgBox = document.getElementById("product-message");
-  const interval = setInterval(async () => {
-    const res = await fetch(`/api/v1/products/barcode/${barcode}/message`);
-    const data = await res.json();
-    if (data.message && !data.message.includes("Generating")) {
-      msgBox.textContent = data.message;
-      clearInterval(interval);
-    }
-  }, 2000);
-}
-</script>
-
 </body>
 </html>
 

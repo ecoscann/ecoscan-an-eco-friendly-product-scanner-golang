@@ -102,7 +102,7 @@ func (h *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
  */
 
     // if no cache we save into db 
-   // message := h.generateMotivationalMessage(mainProduct, productScore)
+    message := h.generateMotivationalMessage(mainProduct, productScore)
 
 /* // Save it back to DB for next time
 _, err = h.DB.Exec("UPDATE products SET eco_message = $1 WHERE id = $2", message, mainProduct.ID)
@@ -116,26 +116,12 @@ if err != nil {
         Score:        productScore,
         ScoreRating:  scoreRating,
         Alternatives: alternativesData,
-        Message: "",
+        Message: message,
     }
+
     w.WriteHeader(http.StatusOK)
     err = json.NewEncoder(w).Encode(response)
     if err != nil {
         log.Printf("Error encoding response: %v", err)
     }
-
-     go func(p repo.Product, s int) {
-    msg := h.generateMotivationalMessage(p, s)
-    h.Store.Set(p.Barcode, msg)
-    }(mainProduct, productScore)
-
-}
-
-func (h *ProductHandler) GetProductMessage(w http.ResponseWriter, r *http.Request) {
-    barcode := r.PathValue("barcode")
-    if msg, ok := h.Store.Get(barcode); ok {
-        _ = json.NewEncoder(w).Encode(map[string]string{"message": msg})
-        return
-    }
-    _ = json.NewEncoder(w).Encode(map[string]string{"message": "Generating eco tip…"})
 }

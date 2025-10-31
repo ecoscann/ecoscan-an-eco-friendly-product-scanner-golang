@@ -12,9 +12,6 @@ func (h *ProductHandler) RegisterRoutes(mux *http.ServeMux, mngr *middlewares.Ma
 
 	)
 
-	mux.Handle("GET /api/v1/products/barcode/{barcode}/message",
-        mngr.Chain(http.HandlerFunc(h.GetProductMessage)),
-    )
 
 	mux.Handle("GET /api/v1/products/search", mngr.Chain(http.HandlerFunc(h.SearchProductsByName)))
 
