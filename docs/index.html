@@ -1651,14 +1651,16 @@ async function loadProduct(barcode) {
   document.getElementById("product-score-rating").textContent = data.score_rating;
   document.getElementById("product-barcode").textContent = data.product.barcode;
 
-  // Show eco message container with placeholder
-  const msgBox = document.getElementById("product-message");
-  const msgContainer = document.getElementById("product-message-container");
-  msgContainer.classList.remove("hidden");
-  msgBox.textContent = "Eco tip আসছে… 🌱";
+  /// Show eco message container with placeholder
+const msgContainer = document.getElementById("product-message-container");
+const msgBox = document.getElementById("product-message");
 
-  // Poll for AI message
-  pollMessage(barcode);
+msgContainer.classList.remove("hidden");
+msgBox.textContent = "Eco tip আসছে… 🌱";
+
+// Then start polling for AI message
+pollMessage(barcode);
+
 }
 
 async function pollMessage(barcode) {
