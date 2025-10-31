@@ -8,7 +8,7 @@ import (
 
 type ProductHandler struct {
 	DB *sqlx.DB
-	 Store  *MessageStore
+	Store  *MessageStore
 }
 
 func NewProductHandler(db *sqlx.DB) *ProductHandler {
