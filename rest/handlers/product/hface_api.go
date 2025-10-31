@@ -50,8 +50,8 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
                 "Task: Write a 3-line, celebratory message in casual Bengali (Banglish style). "+
                 "Tone: Respectful 'আপনি', enthusiastic, positive, and reinforcing. "+
                 "demo: চমৎকার! Aarong Dairy Chocolate Milk এর রিচ চকলেট এর ফ্লেভার অনেক মজা, অনেকের ই পছন্দ এটা। আর এর প্যাকেজিং অনেক sustainable! এটা কিনলে আপনি প্রায় 40% এর বেশি অপচয় কমালেন। এটা নিশ্চিন্তে কিনতে পারেন। এভাবেই বাংলাদেশ এর পরিবেশ রক্ষায় আপনার অবদান রাখুন।"+
-			"the percentage should be based on real % positive impact on nature after a person decide to buy a sustainable product"+
-			"write in your own way inspire from the demo. rewrite, dont write the same everytime",
+			"write in your own way inspire from the demo. rewrite, dont write the same everytime"
+			"the percentage should be based on real or random % positive impact on nature after a person decide to buy a sustainable product"+,
             product.Name, product.BrandName, score, product.Name,
         )
     }
