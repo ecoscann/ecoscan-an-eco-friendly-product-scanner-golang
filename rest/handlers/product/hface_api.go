@@ -35,17 +35,18 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
     var prompt string
     if score < 60 {
         prompt = fmt.Sprintf(
-            "Context: The user scanned %s by %s. Eco‑score: %d (low).\n"+
-                "Task: Write exactly 3 lines in Bengali (Banglish style).\n"+
-                "- Use respectful 'আপনি' tone.\n"+
-                "- Line 1: Mention the product name(in english) and say something nice about its taste/usage.\n"+
-                "- Line 2: Point out the environmental issue with its packaging (%s).\n"+
-                "- Line 3: Suggest and manipulate them to look for altrnative products below, a greener alternative (like glass, can, paper) and mention a realistic %% waste reduction.\n"+
-                "Always end with 🌱.\n\n"+
-                "Demo (for inspiration, don’t copy exactly, rewrite in your own way):\n"+
-                "Coconut Cookie খেতে অনেক মজা এতে কোকোনাট এর একটা ন্যাচারাল ফ্লেভার আছে তবে Plastic Packaging টা কিন্তু চিন্তা করার বিষয়। এবার কেনাকাটায় একটু greener হোন, Alternatives গুলো চেক করুন better অপশন পেলে প্রায় আপনি 30%% plastic waste কমাতে আপনার অবদান রাখতে পারবেন। আসুন সবাই মিলে একটু পরিচ্ছন্ন বাংলাদেশ 🇧🇩 গড়ি।",
-            product.Name, product.BrandName, score, product.PackagingMaterial,
-        )
+		"Context: The user scanned %s by %s. Eco‑score: %d (low).\n"+
+		"Task: Write exactly 3 lines in Bengali (Banglish style).\n"+
+		"- Line 1: Say something nice about the product.\n"+
+		"- Line 2: Point out the environmental issue with its packaging (%s).\n"+
+		"- Line 3: Encourage the user to check the alternative products list shown in the app, "+
+		"and explain they could reduce waste by choosing one of those greener options.\n"+
+		"Tone: Respectful 'আপনি', friendly, motivational, and empowering.\n"+
+		"Always end with 🌱.\n\n"+
+		"Demo (for inspiration, don’t copy exactly): Coconut Cookie খেতে অনেক মজা... তবে Plastic Packaging টা চিন্তার বিষয়। এবার greener হোন, Alternatives গুলো চেক করুন, better অপশন পেলে প্রায় 30%% plastic waste কমাতে পারবেন। আসুন সবাই মিলে পরিচ্ছন্ন বাংলাদেশ 🇧🇩 গড়ি।",
+		product.Name, product.BrandName, score, product.PackagingMaterial,
+)
+
     } else {
         prompt = fmt.Sprintf(
             "Context: The user scanned %s by %s. Eco‑score: %d (good).\n"+
