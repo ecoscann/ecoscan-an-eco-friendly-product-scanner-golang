@@ -69,7 +69,7 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
     }
 
     payload := map[string]interface{}{
-        "model": "meta-llama/llama-4-maverick:free", 
+        "model": "tngtech/deepseek-r1t2-chimera:free", 
         "messages": messages,
     }
 
