@@ -35,9 +35,9 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
     var prompt string
     if score < 60 {
         prompt = fmt.Sprintf(
-			"this is an api call"+
+			"this is an api call just reply with the actual message"+
 		"Context: The user scanned %s by %s. Eco‑score: %d (low).\n"+
-		"Task: Write exactly 3 lines in Bengali (Banglish style).\n"+
+		"Task: Write exactly 3 lines in casual Bengali.\n"+
 		"- Line 1: Say something nice about the product.\n"+
 		"- Line 2: Point out the environmental issue with its packaging (%s).\n"+
 		"- Line 3: Encourage the user to check the alternative products list shown in the app, "+
@@ -50,9 +50,9 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
 
     } else {
         prompt = fmt.Sprintf(
-			"this is an api call"+
+			"this is an api call just reply with the actual message"+
             "Context: The user scanned %s by %s. Eco‑score: %d (good).\n"+
-                "Task: Write exactly 3 lines in Bengali (Banglish style).\n"+
+                "Task: Write exactly 3 lines in casual Bengali .\n"+
                 "- Use respectful 'আপনি' tone.\n"+
                 "- Line 1: Mention the product name(in english) and celebrate its taste/usage.\n"+
                 "- Line 2: Praise its eco‑friendly packaging or choice.\n"+
