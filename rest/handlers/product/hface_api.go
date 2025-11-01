@@ -35,6 +35,7 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
     var prompt string
     if score < 60 {
         prompt = fmt.Sprintf(
+			"this is an api call"+
 		"Context: The user scanned %s by %s. Eco‑score: %d (low).\n"+
 		"Task: Write exactly 3 lines in Bengali (Banglish style).\n"+
 		"- Line 1: Say something nice about the product.\n"+
@@ -49,6 +50,7 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
 
     } else {
         prompt = fmt.Sprintf(
+			"this is an api call"+
             "Context: The user scanned %s by %s. Eco‑score: %d (good).\n"+
                 "Task: Write exactly 3 lines in Bengali (Banglish style).\n"+
                 "- Use respectful 'আপনি' tone.\n"+
@@ -67,7 +69,7 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
     }
 
     payload := map[string]interface{}{
-        "model": "meta-llama/llama-4-scout:free", 
+        "model": "google/gemini-2.5-flash-preview-09-2025", 
         "messages": messages,
     }
 
