@@ -80,7 +80,7 @@ func (h *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
         log.Printf("Calculated score for alternative %s: %d", alternativesData[i].Barcode, altScore)
     }
 
-    /* // extract cache if already in db
+    // extract cache if already in db
     var cachedMessage string 
     err = h.DB.Get(&cachedMessage, "SELECT eco_message FROM products WHERE id = $1", mainProduct.ID)
     if err == nil && cachedMessage != "" {
@@ -99,17 +99,17 @@ func (h *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
     }
     return
 }
- */
+ 
 
     // if no cache we save into db 
     message := h.generateMotivationalMessage(mainProduct, productScore)
 
-/* // Save it back to DB for next time
+// Save it back to DB for next time
 _, err = h.DB.Exec("UPDATE products SET eco_message = $1 WHERE id = $2", message, mainProduct.ID)
 if err != nil {
     log.Printf("Failed to cache Gemini message: %v", err)
 }
- */
+ 
 
     response := ProductResponse{
         Product:      mainProduct,
