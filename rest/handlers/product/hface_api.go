@@ -69,7 +69,7 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
     }
 
     payload := map[string]interface{}{
-        "model": "google/gemma-3-27b-it:free", 
+        "model": "meta-llama/llama-4-maverick:free", 
         "messages": messages,
     }
 
