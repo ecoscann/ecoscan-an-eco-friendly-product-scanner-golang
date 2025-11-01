@@ -40,7 +40,7 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
                 "- Use respectful 'আপনি' tone.\n"+
                 "- Line 1: Mention the product name(in english) and say something nice about its taste/usage.\n"+
                 "- Line 2: Point out the environmental issue with its packaging (%s).\n"+
-                "- Line 3: Suggest a greener alternative (like glass, can, paper) and mention a realistic %% waste reduction.\n"+
+                "- Line 3: Suggest and manipulate them to look for altrnative products below, a greener alternative (like glass, can, paper) and mention a realistic %% waste reduction.\n"+
                 "Always end with 🌱.\n\n"+
                 "Demo (for inspiration, don’t copy exactly, rewrite in your own way):\n"+
                 "Coconut Cookie খেতে অনেক মজা এতে কোকোনাট এর একটা ন্যাচারাল ফ্লেভার আছে তবে Plastic Packaging টা কিন্তু চিন্তা করার বিষয়। এবার কেনাকাটায় একটু greener হোন, Alternatives গুলো চেক করুন better অপশন পেলে প্রায় আপনি 30%% plastic waste কমাতে আপনার অবদান রাখতে পারবেন। আসুন সবাই মিলে একটু পরিচ্ছন্ন বাংলাদেশ 🇧🇩 গড়ি।",
