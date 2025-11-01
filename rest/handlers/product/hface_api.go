@@ -61,7 +61,7 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
 	}
 
 	payload := map[string]interface{}{
-		"model":    "z-ai/glm-4.5-air:free",
+		"model":    "deepseek/deepseek-chat-v3-0324:free",
 		"messages": messages,
 	}
 
