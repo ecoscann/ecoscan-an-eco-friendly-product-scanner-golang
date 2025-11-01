@@ -61,7 +61,7 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
 	}
 
 	payload := map[string]interface{}{
-		"model":    "openai/gpt-4o",
+		"model":    "z-ai/glm-4.5-air:free",
 		"messages": messages,
 	}
 
