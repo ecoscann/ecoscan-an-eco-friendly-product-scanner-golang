@@ -38,7 +38,7 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
             "Context: The user scanned %s by %s. Eco‑score: %d (low).\n"+
                 "Task: Write exactly 3 lines in Bengali (Banglish style).\n"+
                 "- Use respectful 'আপনি' tone.\n"+
-                "- Line 1: Mention the product name and say something nice about its taste/usage.\n"+
+                "- Line 1: Mention the product name(in english) and say something nice about its taste/usage.\n"+
                 "- Line 2: Point out the environmental issue with its packaging (%s).\n"+
                 "- Line 3: Suggest a greener alternative (like glass, can, paper) and mention a realistic %% waste reduction.\n"+
                 "Always end with 🌱.\n\n"+
@@ -51,7 +51,7 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
             "Context: The user scanned %s by %s. Eco‑score: %d (good).\n"+
                 "Task: Write exactly 3 lines in Bengali (Banglish style).\n"+
                 "- Use respectful 'আপনি' tone.\n"+
-                "- Line 1: Mention the product name and celebrate its taste/usage.\n"+
+                "- Line 1: Mention the product name(in english) and celebrate its taste/usage.\n"+
                 "- Line 2: Praise its eco‑friendly packaging or choice.\n"+
                 "- Line 3: Highlight a realistic %% waste saved and encourage continuing.\n"+
                 "Always end with 🌱.\n\n"+
