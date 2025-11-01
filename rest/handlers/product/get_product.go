@@ -65,11 +65,11 @@ func (h *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
         SELECT id, barcode, name, brand_name, category, sub_category,
                image_url, price, packaging_material, manufacturing_location, disposal_method
         FROM products
-        WHERE category = $1 AND id != $2 AND (price < $3 OR packaging_material IN ('glass', 'paper', 'none', 'compostable_paper', 'cardboard'))
+        WHERE sub_category = $1 AND id != $2 AND (price < $3 OR packaging_material IN ('glass', 'paper', 'none', 'compostable_paper', 'cardboard'))
         ORDER BY price DESC, packaging_material ASC
         LIMIT 4
     `
-    err = h.DB.Select(&alternativesData, queryAlt, mainProduct.Category, mainProduct.ID, mainProduct.Price)
+    err = h.DB.Select(&alternativesData, queryAlt, mainProduct.SubCatergory, mainProduct.ID, mainProduct.Price)
     if err != nil && !errors.Is(err, sql.ErrNoRows) {
         log.Printf("Could not find alternatives for product ID %d: %v", mainProduct.ID, err)
     }
