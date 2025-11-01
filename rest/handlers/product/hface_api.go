@@ -69,7 +69,7 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
     }
 
     payload := map[string]interface{}{
-        "model": "tngtech/deepseek-r1t2-chimera:free", 
+        "model": "google/gemma-3-27b-it:free", 
         "messages": messages,
     }
 
