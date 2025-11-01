@@ -41,7 +41,7 @@ func (h *ProductHandler) generateMotivationalMessage(product repo.Product, score
 				"Always end with an eco emoji 🌱."+
 				"inspire from the demo below and tell/ rewrite in your own way say something about the product first"+
 				"demo: Coconut Cookie খেতে অনেক মজা এতে কোকোনাট এর একটা ন্যাচারাল ফ্লেভার আছে তবে Plastic Packaging টা কিন্তু চিন্তা করার বিষয়। এবার কেনাকাটায় একটু greener হোন, Alternatives গুলো চেক করুন better অপশন পেলে প্রায় আপনি 30% ,plastic waste কমাতে আপনার অবদান রাখতে পারবেন। আসুন সবাই মিলে একটু পরিচ্ছন্ন বাংলাদেশ 🇧🇩 গড়ি।"+
-				"the percentage of wastage should be based on real % impact on nature after a person decide not to buy that material product",
+				"the percentage of wastage should be based on real % impact on nature after a person decide not to buy that material product and tell use to choose alternatives packaging option that related to the product usage",
 			product.Name, product.BrandName, score, product.Name, product.PackagingMaterial, product.PackagingMaterial,
 		)
 	} else {
