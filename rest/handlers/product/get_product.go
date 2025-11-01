@@ -66,7 +66,7 @@ func (h *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
                image_url, price, packaging_material, manufacturing_location, disposal_method
         FROM products
         WHERE category = $1 AND id != $2 AND (price < $3 OR packaging_material IN ('glass', 'paper', 'none', 'compostable_paper', 'cardboard'))
-        ORDER BY price ASC, packaging_material ASC
+        ORDER BY price DESC, packaging_material ASC
         LIMIT 4
     `
     err = h.DB.Select(&alternativesData, queryAlt, mainProduct.Category, mainProduct.ID, mainProduct.Price)
