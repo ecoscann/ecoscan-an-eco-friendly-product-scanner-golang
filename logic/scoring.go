@@ -4,6 +4,8 @@ import (
 	"ecoscan.com/repo"
 )
 
+/* the scoring system is totally a protype version. it doesnt means or represent the actual scoring features at all. The main roduct will have different and will follow a standard.*/
+
 func CalculateScore(product repo.Product) float64{
 	packagingScore := calculatePackagingScore(product.PackagingMaterial)
 	transportScore := calculateTransportScore(product.ManufacturingLocation)
