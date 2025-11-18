@@ -15,7 +15,7 @@ func (h *ProductHandler) RegisterRoutes(mux *http.ServeMux, mngr *middlewares.Ma
 
 	mux.Handle("GET /api/v1/products/search", mngr.Chain(http.HandlerFunc(h.SearchProductsByName)))
 
-	mux.Handle("GET /api/v1/products/search", mngr.Chain(http.HandlerFunc(h.UpdatePrd)))
+	mux.Handle("GET /api/v1/products/update", mngr.Chain(http.HandlerFunc(h.UpdatePrd)))
 	
 
 	mux.Handle("POST /api/v1/products/request", 
