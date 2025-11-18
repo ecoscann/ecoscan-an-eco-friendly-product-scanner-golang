@@ -62,28 +62,12 @@ func (h *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
 
     var alternativesData []repo.Product
     queryAlt := `
-        WITH sub_alts AS (
-    SELECT id, barcode, name, brand_name, category, sub_category,
-           image_url, price, packaging_material, manufacturing_location, disposal_method
-    FROM products
-    WHERE sub_category = $1
-      AND id != $2
-      AND (price < $3 OR packaging_material IN ('glass','paper','none','compostable_paper','cardboard'))
-    ORDER BY price DESC, packaging_material ASC
-    LIMIT 4
-)
-SELECT * FROM sub_alts
-UNION ALL
-SELECT id, barcode, name, brand_name, category, sub_category,
-       image_url, price, packaging_material, manufacturing_location, disposal_method
-FROM products
-WHERE category = $4   -- same category as main product
-  AND id != $2
-  AND (price < $3 OR packaging_material IN ('glass','paper','none','compostable_paper','cardboard'))
-  AND NOT EXISTS (SELECT 1 FROM sub_alts)   -- only if no sub_category alts found
-ORDER BY price DESC, packaging_material ASC
-LIMIT 4;
-
+        SELECT id, barcode, name, brand_name, category, sub_category,
+               image_url, price, packaging_material, manufacturing_location, disposal_method
+        FROM products
+        WHERE sub_category = $1 AND id != $2 AND (price < $3 OR packaging_material IN ('glass', 'paper', 'none', 'compostable_paper', 'cardboard'))
+        ORDER BY price DESC, packaging_material ASC
+        LIMIT 4
     `
     err = h.DB.Select(&alternativesData, queryAlt, mainProduct.SubCatergory, mainProduct.ID, mainProduct.Price)
     if err != nil && !errors.Is(err, sql.ErrNoRows) {
